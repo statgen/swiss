@@ -141,7 +141,7 @@ class GWASCatalog:
     ld_catalog = None;
     failed_ld_variants = [];
     for v in vars:
-      print "\nWorking on variant %s (%s).." % (v.name,v.chrpos);
+      print "Working on variant %s (%s).." % (v.name,v.chrpos);
       
       ld_ok = finder.compute(v.chrpos,v.chrom,v.pos - dist, v.pos + dist,ld_thresh);
       if ld_ok:
