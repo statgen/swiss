@@ -13,6 +13,7 @@ from LDClumper import *
 from AssocResults import *
 from GWASCatalog import *
 from itertools import *
+from VerboseParser import *
 
 SWISS_CONF = "conf/swiss.conf";
 __builtin__.SWISS_DEBUG = True;
@@ -45,10 +46,11 @@ def getConf(conf_file=SWISS_CONF):
   return conf;
 
 def get_settings():
-  parser = OptionParser();
+  usage = "swiss [options]";
+  parser = VerboseParser(usage=usage);
 
   # Association result input options. 
-  parser.add_option("--assoc",help="Association results file.");
+  parser.add_option("--assoc",help="[Required] Association results file.");
   parser.add_option("--trait",help="Description of phenotype for association results file. E.g. 'HDL' or 'T2D'");
   parser.add_option("--delim",help="Association results delimiter.",default="\t");
   parser.add_option("--build",help="Genome build your association results are anchored to.",default="hg19");
