@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+
+def bootstrap_lib(lib_path):
+  import os, sys
+  from glob import glob
+
+  exist_eggs = [os.path.basename(i) for i in sys.path];
+
+  sys.path.insert(1,lib_path);
+
+  for d in glob(os.path.join(lib_path,"*egg")):
+    if os.path.basename(d) in exist_eggs:
+      continue;
+    else:
+      sys.path.insert(1,d);
+
+bootstrap_lib("/net/snowwhite/home/welchr/lib/python2.7/site-packages");
+
+import sys
+import os
+
+pyex = sys.executable;
+
+swiss_dir = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])),"../src");
+sys.path.insert(0,swiss_dir);
+
+from main import main
+
+main();
+
