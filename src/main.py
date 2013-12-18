@@ -23,7 +23,7 @@ class BasePair:
     self.bp = bp;
 
   def as_kb(self):
-    kb = self.bp / 1000.0;
+    kb = float(self.bp) / 1000.0;
     if int(kb) == kb:
       kb = int(kb);
 
@@ -260,7 +260,8 @@ def main():
   # GWAS catalog. 
   gcat = GWASCatalog(opts.gwas_cat_file);
 
-  missing_vcf = gcat.variants_missing_vcf(opts.ld_clump_source_file);
+  print "\nIdentifying GWAS catalog variants that do not overlap with your --ld-gwas-source: %s" % opts.ld_gwas_source;
+  missing_vcf = gcat.variants_missing_vcf(opts.ld_gwas_source_file);
   missing_vcf.sort('PHENO',inplace=True);
   missing_vcf = sort_genome(missing_vcf,'CHR','POS');
   print colored('Warning: ','yellow') + "the following variants in the GWAS catalog are not present in your VCF file: ";
@@ -323,7 +324,9 @@ def main():
 
     gwas_near = gcat.variants_nearby(results_clumped_ldfail,opts.gwas_cat_dist);
     if gwas_near.shape[0] > 0:
+      print "\nFor those variants for which LD buddies could not be computed, there were %i variants within %s of a GWAS hit." % (gwas_near.shape[0],BasePair(opts.gwas_cat_dist).as_kb());
       out_near_gwas = os.path.splitext(opts.out)[0] + ".near-gwas.tab";
+      print "These variants were written to: %s" % out_near_gwas;
       gwas_near.to_csv(out_near_gwas,index=False,sep="\t");
     else:
       print "\nFor those variants that did not exist in the VCF file (for computing LD buddies for GWAS hits), there were no GWAS hits within %s." % BasePair(opts.gwas_cat_dist).as_kb();
@@ -349,7 +352,9 @@ def main():
 #      print_cols = "ASSOC_MARKER ASSOC_CHRPOS ASSOC_TRAIT GWAS_SNP GWAS_CHRPOS ASSOC_GWAS_DIST BUILD PHENO GENE_LABEL POPULATION CITATION".split();
 #      print gwas_near[print_cols].to_string(index=False);
 
+      print "\nFor those variants for which LD buddies could not be computed, there were %i variants within %s of a GWAS hit." % (gwas_near.shape[0],BasePair(opts.gwas_cat_dist).as_kb());
       out_near_gwas = os.path.splitext(opts.out)[0] + ".near-gwas.tab";
+      print "These variants were written to: %s" % out_near_gwas;
       gwas_near.to_csv(out_near_gwas,index=False,sep="\t");
     else:
       print "\nNo GWAS hits discovered within %s of any clumped results." % BasePair(opts.gwas_cat_dist).as_kb();

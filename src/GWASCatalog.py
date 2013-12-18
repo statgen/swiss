@@ -200,7 +200,7 @@ class GWASCatalog:
     if len(variants) > 0:
       for v in variants:
         # Could do better with interval tree or indexing, but performance is probably fine here (only 10K rows.) 
-        is_near = (self.data['CHR'] == v.chrom) & (self.data['POS'] > v.pos - dist) & (self.data['POS'] < v.pos + dist); 
+        is_near = (self.data['CHR'].map(str) == str(v.chrom)) & (self.data['POS'] > v.pos - dist) & (self.data['POS'] < v.pos + dist); 
         cat_rows = self.data[is_near];
         
         cat_rows['ASSOC_MARKER'] = v.name;
