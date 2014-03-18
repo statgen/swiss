@@ -222,7 +222,7 @@ def main():
   (opts,args) = get_settings();
 
   # Setup log file. 
-  log_file = os.path.splitext(opts.out)[0] + ".log";
+  log_file = opts.out + ".log";
   log_obj = codecs.open(log_file,'w','utf-8');
   
   @atexit.register
@@ -291,7 +291,7 @@ def main():
       'failed_clump'
     ];
     print results_clumped.data[print_cols].to_string(index=False);
-    out_clump = os.path.splitext(opts.out)[0] + ".clump";
+    out_clump = opts.out + ".clump";
     print "\nWriting clumped results to: %s" % out_clump;
     results_clumped.data.to_csv(out_clump,index=False,sep="\t");
 
@@ -315,7 +315,7 @@ def main():
         gwas_hits = pd.merge(gwas_hits,assoc_incl_cols,left_on="ASSOC_MARKER",right_on=opts.snp_col);
         del gwas_hits[opts.snp_col];
 
-    out_ld_gwas = os.path.splitext(opts.out)[0] + ".ld-gwas.tab";
+    out_ld_gwas = opts.out + ".ld-gwas.tab";
     print "\nWriting results to: %s" % out_ld_gwas;
     gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t");
 
@@ -325,7 +325,7 @@ def main():
     gwas_near = gcat.variants_nearby(results_clumped_ldfail,opts.gwas_cat_dist);
     if gwas_near.shape[0] > 0:
       print "\nFor those variants for which LD buddies could not be computed, there were %i variants within %s of a GWAS hit." % (gwas_near.shape[0],BasePair(opts.gwas_cat_dist).as_kb());
-      out_near_gwas = os.path.splitext(opts.out)[0] + ".near-gwas.tab";
+      out_near_gwas = opts.out + ".near-gwas.tab";
       print "These variants were written to: %s" % out_near_gwas;
       gwas_near.to_csv(out_near_gwas,index=False,sep="\t");
     else:
@@ -342,7 +342,7 @@ def main():
       opts.pval_col,
     ];
     print results.data[print_cols].to_string(index=False);
-    out_clump = os.path.splitext(opts.out)[0] + ".clump.tab";
+    out_clump = opts.out + ".clump.tab";
     print "\nWriting clumped results to: %s" % out_clump;
     results.data.to_csv(out_clump,index=False,sep="\t");
 
@@ -353,7 +353,7 @@ def main():
 #      print gwas_near[print_cols].to_string(index=False);
 
       print "\nFor those variants for which LD buddies could not be computed, there were %i variants within %s of a GWAS hit." % (gwas_near.shape[0],BasePair(opts.gwas_cat_dist).as_kb());
-      out_near_gwas = os.path.splitext(opts.out)[0] + ".near-gwas.tab";
+      out_near_gwas = opts.out + ".near-gwas.tab";
       print "These variants were written to: %s" % out_near_gwas;
       gwas_near.to_csv(out_near_gwas,index=False,sep="\t");
     else:
@@ -380,7 +380,7 @@ def main():
         gwas_hits = pd.merge(gwas_hits,assoc_incl_cols,left_on="ASSOC_MARKER",right_on=opts.snp_col);
         del gwas_hits[opts.snp_col];
 
-    out_ld_gwas = os.path.splitext(opts.out)[0] + ".ld-gwas.tab";
+    out_ld_gwas = opts.out + ".ld-gwas.tab";
     print "\nWriting results to: %s" % out_ld_gwas;
     gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t");
 
@@ -389,7 +389,7 @@ def main():
 
     gwas_near = gcat.variants_nearby(results_clumped_ldfail,opts.gwas_cat_dist);
     if gwas_near.shape[0] > 0:
-      out_near_gwas = os.path.splitext(opts.out)[0] + ".near-gwas.tab";
+      out_near_gwas = opts.out + ".near-gwas.tab";
       gwas_near.to_csv(out_near_gwas,index=False,sep="\t");
     else:
       print "\nFor those variants that did not exist in the VCF file (for computing LD buddies for GWAS hits), there were no GWAS hits within %s." % BasePair(opts.gwas_cat_dist).as_kb();
