@@ -17,12 +17,32 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===============================================================================
 
-import sys
-import os
-import decimal
-import fnmatch
 import __builtin__
+import os, sys, decimal, fnmatch, gzip
 from termcolor import colored
+
+def is_gzip(file,verbose=False):
+  import gzip
+
+  try:
+    f = gzip.open(file);
+  except:
+    if verbose:
+      print "(gzip) could not open file, not gzipped: %s" % file;
+
+    return False;
+
+  try:
+    f.read(1024);
+    b = True;
+  except:
+    b = False;
+    if verbose:
+      print "(gzip) could not read data from gzip file object: %s" % file;
+  finally:
+    f.close();
+
+  return b;
 
 def error(msg):
   if hasattr(__builtin__,'SWISS_DEBUG') and __builtin__.SWISS_DEBUG:

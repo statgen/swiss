@@ -41,7 +41,8 @@ class AssocResults:
     self.pos_col = "pos";
 
   def load(self,*args,**kwargs):
-    self.data = pd.read_table(self.filepath,*args,**kwargs);
+    compr = 'gzip' if is_gzip(self.filepath) else None;
+    self.data = pd.read_table(self.filepath,compression=compr,*args,**kwargs);
 
     for col in ('pval_col','marker_col','chrom_col','pos_col'):
       if self.__dict__[col] not in self.data.columns:
