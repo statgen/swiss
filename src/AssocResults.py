@@ -39,6 +39,7 @@ class AssocResults:
     self.marker_col = "MarkerName";
     self.chrom_col = "chr";
     self.pos_col = "pos";
+    self.rsq_col = "RSQ";
 
   def load(self,*args,**kwargs):
     compr = 'gzip' if is_gzip(self.filepath) else None;
@@ -57,6 +58,25 @@ class AssocResults:
     
     self.data = self.data[self.data[self.pos_col].notnull()];
     self.data[self.pos_col] = self.data[self.pos_col].astype('int');
+
+  def filter_imp_quality(self,threshold=0.3):
+    try:
+      threshold = float(threshold);
+    except:
+      error("Imputation quality threshold is not floatable, got: %s" % str(threshold));
+
+    start = self.data.shape[0];
+    self.data = self.data[self.data[self.rsq_col] >= threshold];
+    end = self.data.shape[0];
+
+    print "Imputation quality filter removed %i variants.." % (start - end);
+
+  def do_filter(self,filter_expr):
+    start = self.data.shape[0];
+    self.data = self.data.query(filter_expr);
+    end = self.data.shape[0];
+
+    print "Filter '%s' removed %i variants.." % (filter_expr,start - end);
 
   def liftover(self,build):
     pass

@@ -58,6 +58,11 @@ def get_settings():
   parser.add_option("--pval-col",help="P-value column name in results file.",default="P-value");
   parser.add_option("--chrom-col",help="Chromosome column name in results file.",default="CHR");
   parser.add_option("--pos-col",help="Position column name in results file.",default="POS");
+  parser.add_option("--rsq-col",help="Imputation quality column name.",default="RSQ");
+
+  # Association result filtering results. 
+  parser.add_option("--rsq-filter",help="Remove variants below this imputation quality.",default=None);
+  parser.add_option("--filter",help="Give a general filter string to filter variants.",default=None);
 
   # Output options. 
   parser.add_option("--out",help="Prefix for output files.",default="swiss_output");
@@ -238,12 +243,22 @@ def main():
   sys.stdout = StreamTee(sys.stdout,log_obj);
   sys.stderr = StreamTee(sys.stderr,log_obj);
 
+  print "\nLoading association results file: %s" % opts.assoc;
   results = AssocResults(opts.assoc,opts.trait);
   results.marker_col = opts.snp_col;
   results.chrom_col = opts.chrom_col;
   results.pos_col = opts.pos_col;
   results.pval_col = opts.pval_col;
+  results.rsq_col = opts.rsq_col;
   results.load(sep=opts.delim);
+
+  # Filter results on imputation quality, if requested. 
+  if opts.rsq_filter is not None:
+    results.filter_imp_quality(opts.rsq_filter);
+
+  # If the user specified an arbitrary filter, run it too. 
+  if opts.filter is not None:
+    results.do_filter(opts.filter);
 
   # LD finder for clumping 
   vset = VCFastSettings(opts.ld_clump_source_file,opts.vcfast_path);
