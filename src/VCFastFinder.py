@@ -132,6 +132,7 @@ class VCFastFinder():
         return {};
     else:
       vcf = self.settings.vcf_path;
+
     com = "{vcfast_path} index-LD --vcf {vcffile} --index {chrpos} --minMAF 0 --out - --win 99999999 --region {region} --min-r2 {min_r2}".format(
       vcfast_path = self.settings.vcfast_path,
       vcffile = vcf,
@@ -145,6 +146,10 @@ class VCFastFinder():
 
     proc = subprocess.Popen(com,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE);
     (stdout, stderr) = proc.communicate();
+
+    if self.verbose:
+      print stdout;
+      print >> sys.stderr, stderr;
 
     if proc.returncode != 0:
       self.vcfast_ok = False;

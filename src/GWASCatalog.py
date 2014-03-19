@@ -196,7 +196,7 @@ class GWASCatalog:
     variants = assoc.get_snps();
     trait = assoc.trait;
 
-    dist_catalog = self.data.head(0);
+    dist_catalog = None;
     if len(variants) > 0:
       for v in variants:
         # Could do better with interval tree or indexing, but performance is probably fine here (only 10K rows.) 
@@ -214,22 +214,23 @@ class GWASCatalog:
 
         dist_catalog = pd.concat([dist_catalog,cat_rows]);
       
-      # Change column names to be more descriptive. 
-      dist_catalog.rename(columns = {
-        'SNP' : 'GWAS_SNP',
-        'CHR' : 'GWAS_CHR',
-        'POS' : 'GWAS_POS',
-        'CHRPOS' : "GWAS_CHRPOS"
-      },inplace=True);
+      if dist_catalog is not None:
+        # Change column names to be more descriptive. 
+        dist_catalog.rename(columns = {
+          'SNP' : 'GWAS_SNP',
+          'CHR' : 'GWAS_CHR',
+          'POS' : 'GWAS_POS',
+          'CHRPOS' : "GWAS_CHRPOS"
+        },inplace=True);
 
-      # Re-order columns. 
-      lead_cols = ['ASSOC_MARKER','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_SNP','GWAS_CHRPOS','ASSOC_GWAS_DIST'];
-      all_cols = dist_catalog.columns.tolist();
-      other_cols = filter(lambda x: x not in lead_cols,all_cols);
-      col_order = lead_cols + other_cols;
-      dist_catalog = dist_catalog[col_order];
+        # Re-order columns. 
+        lead_cols = ['ASSOC_MARKER','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_SNP','GWAS_CHRPOS','ASSOC_GWAS_DIST'];
+        all_cols = dist_catalog.columns.tolist();
+        other_cols = filter(lambda x: x not in lead_cols,all_cols);
+        col_order = lead_cols + other_cols;
+        dist_catalog = dist_catalog[col_order];
 
-      # Remove unnecessary columns. 
-      dist_catalog = dist_catalog.drop(['GWAS_CHR','GWAS_POS'],axis=1);
+        # Remove unnecessary columns. 
+        dist_catalog = dist_catalog.drop(['GWAS_CHR','GWAS_POS'],axis=1);
 
     return dist_catalog; 

@@ -18,6 +18,11 @@ from VerboseParser import *
 SWISS_CONF = "conf/swiss.conf";
 __builtin__.SWISS_DEBUG = True;
 
+if SWISS_DEBUG:
+  pd.set_option('mode.chained_assignment','warn');
+else:
+  pd.set_option('mode.chained_assignment',None);
+
 class BasePair:
   def __init__(self,bp):
     self.bp = bp;
@@ -317,12 +322,12 @@ def main():
     # If the user requested other columns be merged in with the gwas_hits, pull 'em out. 
     if opts.include_cols:
       include_cols = [i.strip() for i in opts.include_cols.split(",")];
-      include_cols = filter(lambda x: x in results_clumped_nofail.data.columns,include_cols);
+      include_cols = filter(lambda x: x in results_clumped.data.columns,include_cols);
 
       if len(include_cols) == 0:
         print "Warning: user specified --include-cols, but none of them existed in the association results!";
       else:
-        assoc_incl_cols = results_clumped_nofail.data[[opts.snp_col] + include_cols];
+        assoc_incl_cols = results_clumped.data[[opts.snp_col] + include_cols];
         assoc_incl_cols.rename(
           columns = dict(zip(include_cols,map(lambda x: "ASSOC_" + x,include_cols))),
           inplace = True
@@ -338,7 +343,8 @@ def main():
     results_clumped_ldfail.keep_variants(gwas_ld_failed_variants);
 
     gwas_near = gcat.variants_nearby(results_clumped_ldfail,opts.gwas_cat_dist);
-    if gwas_near.shape[0] > 0:
+
+    if gwas_near is not None:
       print "\nFor those variants for which LD buddies could not be computed, there were %i variants within %s of a GWAS hit." % (gwas_near.shape[0],BasePair(opts.gwas_cat_dist).as_kb());
       out_near_gwas = opts.out + ".near-gwas.tab";
       print "These variants were written to: %s" % out_near_gwas;
@@ -403,7 +409,7 @@ def main():
     results_clumped_ldfail.keep_variants(gwas_ld_failed_variants);
 
     gwas_near = gcat.variants_nearby(results_clumped_ldfail,opts.gwas_cat_dist);
-    if gwas_near.shape[0] > 0:
+    if gwas_near is not None:
       out_near_gwas = opts.out + ".near-gwas.tab";
       gwas_near.to_csv(out_near_gwas,index=False,sep="\t");
     else:
