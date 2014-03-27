@@ -59,6 +59,12 @@ class AssocResults:
     self.data = self.data[self.data[self.pos_col].notnull()];
     self.data[self.pos_col] = self.data[self.pos_col].astype('int');
 
+    # Try to insert the trait as a column. 
+    if 'TRAIT' in self.data.columns:
+      warn("TRAIT column already exists in your association results file, can't put --trait into it!");
+    else:
+      self.data['TRAIT'] = self.trait;
+
   def filter_imp_quality(self,threshold=0.3):
     try:
       threshold = float(threshold);

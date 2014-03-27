@@ -16,7 +16,7 @@ from itertools import *
 from VerboseParser import *
 
 SWISS_CONF = "conf/swiss.conf";
-__builtin__.SWISS_DEBUG = True;
+__builtin__.SWISS_DEBUG = False;
 
 if SWISS_DEBUG:
   pd.set_option('chained_assignment','warn');
@@ -365,19 +365,18 @@ def main():
       opts.pos_col,
       opts.pval_col,
     ];
+
     print results.data[print_cols].to_string(index=False);
     out_clump = opts.out + ".clump.tab";
+
     print "\nWriting clumped results to: %s" % out_clump;
     results.data.to_csv(out_clump,index=False,sep="\t");
 
     gwas_near = gcat.variants_nearby(results,opts.gwas_cat_dist);
     if gwas_near.shape[0] > 0:
-#      print "\nGWAS hits within %s of clumped results: " % BasePair(opts.gwas_cat_dist).as_kb();
-#      print_cols = "ASSOC_MARKER ASSOC_CHRPOS ASSOC_TRAIT GWAS_SNP GWAS_CHRPOS ASSOC_GWAS_DIST BUILD PHENO GENE_LABEL POPULATION CITATION".split();
-#      print gwas_near[print_cols].to_string(index=False);
-
       print "\nFor those variants for which LD buddies could not be computed, there were %i variants within %s of a GWAS hit." % (gwas_near.shape[0],BasePair(opts.gwas_cat_dist).as_kb());
       out_near_gwas = opts.out + ".near-gwas.tab";
+
       print "These variants were written to: %s" % out_near_gwas;
       gwas_near.to_csv(out_near_gwas,index=False,sep="\t");
     else:
