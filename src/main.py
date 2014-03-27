@@ -19,9 +19,9 @@ SWISS_CONF = "conf/swiss.conf";
 __builtin__.SWISS_DEBUG = True;
 
 if SWISS_DEBUG:
-  pd.set_option('mode.chained_assignment','warn');
+  pd.set_option('chained_assignment','warn');
 else:
-  pd.set_option('mode.chained_assignment',None);
+  pd.set_option('chained_assignment',None);
 
 class BasePair:
   def __init__(self,bp):
@@ -292,6 +292,7 @@ def main():
   if opts.ld_clump:
     print "\nLD clumping results..";
     print "\nLD source: %s" % opts.ld_clump_source;
+
     clumper = LDClumper(results,finder_clumping);
     clump_results = clumper.ld_clump(opts.clump_p,opts.clump_ld_thresh,opts.clump_ld_dist);
 
@@ -310,8 +311,10 @@ def main():
       'ld_with',
       'failed_clump'
     ];
+
     print results_clumped.data[print_cols].to_string(index=False);
     out_clump = opts.out + ".clump";
+
     print "\nWriting clumped results to: %s" % out_clump;
     results_clumped.data.to_csv(out_clump,index=False,sep="\t");
 
