@@ -4,16 +4,19 @@ import os.path
 import atexit
 import __builtin__
 import codecs
+import traceback
 from optparse import *
 from termcolor import *
 from glob import glob
 from utils import *
 from VCFastFinder import *
+from PyLDFinder import *
 from LDClumper import *
 from AssocResults import *
 from GWASCatalog import *
 from itertools import *
 from VerboseParser import *
+from multiprocessing import Pool, cpu_count
 
 SWISS_CONF = "conf/swiss.conf";
 __builtin__.SWISS_DEBUG = False;
@@ -56,6 +59,7 @@ def get_settings():
 
   # Association result input options. 
   parser.add_option("--assoc",help="[Required] Association results file.");
+  parser.add_option("--multi-assoc",help="Designate that the results file is in EPACTS multi-assoc format.",action="store_true",default=False);
   parser.add_option("--trait",help="Description of phenotype for association results file. E.g. 'HDL' or 'T2D'");
   parser.add_option("--delim",help="Association results delimiter.",default="\t");
   parser.add_option("--build",help="Genome build your association results are anchored to.",default="hg19");
@@ -76,7 +80,7 @@ def get_settings():
   parser.add_option("--ld-clump",help="Clump association results by LD.",action="store_true",default=False);
   parser.add_option("--clump-p",help="P-value threshold for LD and distance based clumping.",default=5e-08);
   parser.add_option("--clump-ld-thresh",help="LD threshold for clumping.",default=0.2);
-  parser.add_option("--clump-ld-dist",help="Distance from each significant result to calculate LD.",default=2E6);
+  parser.add_option("--clump-ld-dist",help="Distance from each significant result to calculate LD.",default=1E6);
 
   # Distance clumping options. 
   parser.add_option("--dist-clump",help="Clump association results by distance.",action="store_true",default=False);
@@ -98,9 +102,18 @@ def get_settings():
   # LD cache
   parser.add_option("--cache",help="Prefix for LD cache.",default="ld_cache");
 
+  # Misc options
+  parser.add_option("-T","--threads",default=1,type="int",help="Number of parallel jobs to run. Only works with --multi-assoc currently.");
+
   (opts,args) = parser.parse_args();
 
   conf = getConf();
+
+  if opts.threads < 1:
+    opts.threads = 1;
+
+  if opts.threads > cpu_count():
+    print >> sys.stderr, "Warning: you set threads to %i, but the CPU count for this machine is %i..." % (opts.threads,cpu_count());
 
   if opts.list_gwas_cats:
     print_gwas();
@@ -170,6 +183,7 @@ def get_settings():
   if not os.path.isfile(opts.assoc):
     error("Could not locate association results file (or insufficient permissions): %s" % opts.assoc);
 
+  # File delimiter
   if opts.delim in ("tab","\t","\\t"):
     opts.delim = "\t";
   elif opts.delim in ("comma",","):
@@ -185,6 +199,12 @@ def get_settings():
   out_exists = glob(os.path.join(opts.out,"*"));
   if len(out_exists) > 0:
     error("Output files already exist with this prefix: %s" % opts.out);
+
+  # If multi-assoc is specified, the column names are already known.
+  opts.snp_col = "MARKER_ID";
+  opts.pval_col = "PVALUE";
+  opts.chrom_col = "#CHROM";
+  opts.pos_col = "BEG";
 
   return (opts,args);
 
@@ -227,29 +247,99 @@ class StreamTee(object):
     # Emit method call to stdout (stream 1)
     callable1 = getattr(self.stream1, self.__missing_method_name)
     return callable1(*args, **kwargs)
-    
-def main():
-  (opts,args) = get_settings();
 
-  # Setup log file. 
-  log_file = opts.out + ".log";
-  log_obj = codecs.open(log_file,'w','utf-8');
-  
-  @atexit.register
-  def close_log():
-    try:
-      log_obj.close();
-    except:
-      pass
+def get_header(infile,sep="\t"):
+  if infile.endswith(".gz"):
+    f = gzip.open(infile);
+  else:
+    f = open(infile);
 
-  # TODO: this screws up ipython somehow
-  # might be able to set it back when exception is thrown or something?
-  # better long term solution might be to use logging...
-  sys.stdout = StreamTee(sys.stdout,log_obj);
-  sys.stderr = StreamTee(sys.stderr,log_obj);
+  with f:
+    h = f.readline().split(sep);
+    h[-1] = h[-1].rstrip();
 
-  print "\nLoading association results file: %s" % opts.assoc;
-  results = AssocResults(opts.assoc,opts.trait);
+    return h;
+
+# Helper function to iterate over separate traits from an EPACTS multi assoc file.
+def multiassoc_epacts_iter(result_file):
+  header = get_header(result_file);
+
+  #CHROM    BEG    END       MARKER_ID    NS        AC  CALLRATE   GENOCNT      MAF  DHA.P   DHA.B  EstC.P  EstC.B  FAw3.P  FAw3.B  FAw3toFA.P  FAw3toFA.B  FAw6.P  FAw6.B  FAw6toFA.P
+
+  trait_ps = filter(lambda x: x.endswith(".P"),header);
+  trait_betas = filter(lambda x: x.endswith(".B"),header);
+  trait_cols = trait_ps + trait_betas;
+  intro_cols = filter(lambda x: x not in trait_cols,header);
+
+  # Load first columns, since we'll always use them, along with the first trait column.
+  # base_trait = first trait to load
+  base_trait_p = trait_ps[0];
+  base_trait_b = trait_betas[0];
+  base_trait = base_trait_p.replace(".P","");
+  base_cols = intro_cols + [base_trait_p,base_trait_b];
+
+  print "\nLoading trait %s from association results file: %s" % (base_trait,result_file);
+
+  base_df = pd.read_table(result_file,compression = "gzip" if result_file.endswith(".gz") else None,usecols = base_cols);
+  base_df.rename(columns = {base_trait_p : "PVALUE",base_trait_b : "BETA"},inplace=True);
+
+  yield (base_trait,base_df);
+
+  for p in trait_ps[1:]:
+    trait = p.replace(".P","");
+    bcol = trait + ".B";
+
+    print "\nLoading trait %s from association results file: %s" % (trait,result_file);
+
+    df = pd.read_table(result_file,compression = "gzip" if result_file.endswith(".gz") else None,usecols = [p,bcol]);
+    df.rename(columns = {p : "PVALUE",bcol : "BETA"},inplace=True);
+
+    base_df["PVALUE"] = df["PVALUE"];
+    base_df["BETA"] = df["BETA"];
+
+    yield (trait,base_df);
+
+def multiassoc_epacts_load(result_file,trait):
+  print "\nLoading trait %s from association results file: %s" % (trait,result_file);
+
+  header = get_header(result_file);
+
+  #CHROM    BEG    END       MARKER_ID    NS        AC  CALLRATE   GENOCNT      MAF  DHA.P   DHA.B  EstC.P  EstC.B  FAw3.P  FAw3.B  FAw3toFA.P  FAw3toFA.B  FAw6.P  FAw6.B  FAw6toFA.P
+
+  # Check to make sure the trait requested is in the header.
+  trait_ps = filter(lambda x: x.endswith(".P"),header);
+  trait_betas = filter(lambda x: x.endswith(".B"),header);
+  trait_cols = trait_ps + trait_betas;
+  intro_cols = filter(lambda x: x not in trait_cols,header);
+
+  trait_names = map(lambda x: x.replace(".P",""),trait_ps);
+  if trait not in trait_names:
+    raise IOError, "Requested trait %s is not present in %s" % (trait,result_file);
+
+  this_trait_cols = [trait + ".P",trait + ".B"];
+  df = pd.read_table(result_file,compression = "gzip" if result_file.endswith(".gz") else None,usecols = intro_cols + this_trait_cols);
+  df.rename(columns = {
+    trait + ".P" : "PVALUE",
+    trait + ".B" : "BETA"
+  },inplace=True);
+
+  return df;
+
+def multiassoc_epacts_get_traits(result_file):
+  header = get_header(result_file);
+
+  # Check to make sure the trait requested is in the header.
+  trait_ps = filter(lambda x: x.endswith(".P"),header);
+  traits = map(lambda x: x.replace(".P",""),trait_ps);
+
+  return traits;
+
+def run_process(assoc,trait,outprefix,opts):
+  if isinstance(assoc,str):
+    results = AssocResults(assoc,trait);
+  else:
+    results = AssocResults(trait=trait,df=assoc);
+
   results.marker_col = opts.snp_col;
   results.chrom_col = opts.chrom_col;
   results.pos_col = opts.pos_col;
@@ -257,27 +347,35 @@ def main():
   results.rsq_col = opts.rsq_col;
   results.load(sep=opts.delim);
 
-  # Filter results on imputation quality, if requested. 
+  # Filter results on imputation quality, if requested.
   if opts.rsq_filter is not None:
     results.filter_imp_quality(opts.rsq_filter);
 
-  # If the user specified an arbitrary filter, run it too. 
+  # If the user specified an arbitrary filter, run it too.
   if opts.filter is not None:
     results.do_filter(opts.filter);
 
-  # LD finder for clumping 
-  vset = VCFastSettings(opts.ld_clump_source_file,opts.vcfast_path);
-#  cache_clump = LDRegionCache(vset.createLDCacheKey(),opts.cache + "_clump.db");
-#  atexit.register(cache_clump.close);
-  finder_clumping = VCFastFinder(vset,verbose=False,cache=None);
-  
+#   # LD finder for clumping
+#   vset = VCFastSettings(opts.ld_clump_source_file,opts.vcfast_path);
+# #  cache_clump = LDRegionCache(vset.createLDCacheKey(),opts.cache + "_clump.db");
+# #  atexit.register(cache_clump.close);
+#   finder_clumping = VCFastFinder(vset,verbose=False,cache=None);
+#
+#   # LD finder for GWAS catalog lookups
+#   vset_gwas = VCFastSettings(opts.ld_gwas_source_file,opts.vcfast_path);
+# #  cache_gwas = LDRegionCache(vset.createLDCacheKey(),opts.cache + "_gwas.db");
+# #  atexit.register(cache_gwas.close);
+#   finder_gwas = VCFastFinder(vset_gwas,verbose=False,cache=None);
+
+  # LD finder for clumping
+  vset = PyLDSettings(opts.ld_clump_source_file,opts.tabix_path);
+  finder_clumping = PyLDFinder(vset,verbose=False,cache=None);
+
   # LD finder for GWAS catalog lookups
-  vset_gwas = VCFastSettings(opts.ld_gwas_source_file,opts.vcfast_path);
-#  cache_gwas = LDRegionCache(vset.createLDCacheKey(),opts.cache + "_gwas.db");
-#  atexit.register(cache_gwas.close);
-  finder_gwas = VCFastFinder(vset_gwas,verbose=False,cache=None);
-  
-  # GWAS catalog. 
+  vset_gwas = PyLDSettings(opts.ld_gwas_source_file,opts.tabix_path);
+  finder_gwas = PyLDFinder(vset_gwas,verbose=False,cache=None);
+
+  # GWAS catalog.
   gcat = GWASCatalog(opts.gwas_cat_file);
 
   print "\nIdentifying GWAS catalog variants that do not overlap with your --ld-gwas-source: %s" % opts.ld_gwas_source;
@@ -286,7 +384,7 @@ def main():
   missing_vcf = sort_genome(missing_vcf,'CHR','POS');
   print colored('Warning: ','yellow') + "the following variants in the GWAS catalog are not present in your VCF file: ";
   print missing_vcf["SNP CHR POS PHENO Group".split()].to_string(index=False);
-  
+
   print "\nLoaded %i variants from association results.." % results.data.shape[0];
 
   if opts.ld_clump:
@@ -313,16 +411,16 @@ def main():
     ];
 
     print results_clumped.data[print_cols].to_string(index=False);
-    out_clump = opts.out + ".clump";
+    out_clump = outprefix + ".clump";
 
     print "\nWriting clumped results to: %s" % out_clump;
-    results_clumped.data.to_csv(out_clump,index=False,sep="\t");
+    results_clumped.data.to_csv(out_clump,index=False,sep="\t",na_rep="NA");
 
     print "\nFinding clumped results in LD with GWAS catalog variants...";
     print "\nLD source: %s" % opts.ld_gwas_source;
     gwas_hits, gwas_ld_failed_variants = gcat.variants_in_ld(results_clumped,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist);
 
-    # If the user requested other columns be merged in with the gwas_hits, pull 'em out. 
+    # If the user requested other columns be merged in with the gwas_hits, pull 'em out.
     if opts.include_cols:
       include_cols = [i.strip() for i in opts.include_cols.split(",")];
       include_cols = filter(lambda x: x in results_clumped.data.columns,include_cols);
@@ -338,22 +436,16 @@ def main():
         gwas_hits = pd.merge(gwas_hits,assoc_incl_cols,left_on="ASSOC_MARKER",right_on=opts.snp_col);
         del gwas_hits[opts.snp_col];
 
-    out_ld_gwas = opts.out + ".ld-gwas.tab";
-    print "\nWriting results to: %s" % out_ld_gwas;
-    gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t");
+    out_ld_gwas = outprefix + ".ld-gwas.tab";
+    print "\nWriting GWAS catalog variants in LD with clumped variants to: %s" % out_ld_gwas;
+    gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA");
 
-    results_clumped_ldfail = copy.deepcopy(results_clumped);
-    results_clumped_ldfail.keep_variants(gwas_ld_failed_variants);
-
-    gwas_near = gcat.variants_nearby(results_clumped_ldfail,opts.gwas_cat_dist);
+    gwas_near = gcat.variants_nearby(results_clumped,opts.gwas_cat_dist);
 
     if gwas_near is not None:
-      print "\nFor those variants for which LD buddies could not be computed, there were %i variants within %s of a GWAS hit." % (gwas_near.shape[0],BasePair(opts.gwas_cat_dist).as_kb());
-      out_near_gwas = opts.out + ".near-gwas.tab";
-      print "These variants were written to: %s" % out_near_gwas;
-      gwas_near.to_csv(out_near_gwas,index=False,sep="\t");
-    else:
-      print "\nFor those variants that did not exist in the VCF file (for computing LD buddies for GWAS hits), there were no GWAS hits within %s." % BasePair(opts.gwas_cat_dist).as_kb();
+      out_near_gwas = outprefix + ".near-gwas.tab";
+      print "Writing GWAS catalog variants within %s of a clumped variant to: %s" % (BasePair(opts.gwas_cat_dist).as_kb(),out_near_gwas);
+      gwas_near.to_csv(out_near_gwas,index=False,sep="\t",na_rep="NA");
 
   elif opts.dist_clump:
     results.dist_clump(opts.clump_p,opts.clump_dist);
@@ -367,18 +459,18 @@ def main():
     ];
 
     print results.data[print_cols].to_string(index=False);
-    out_clump = opts.out + ".clump.tab";
+    out_clump = outprefix + ".clump.tab";
 
     print "\nWriting clumped results to: %s" % out_clump;
-    results.data.to_csv(out_clump,index=False,sep="\t");
+    results.data.to_csv(out_clump,index=False,sep="\t",na_rep="NA");
 
     gwas_near = gcat.variants_nearby(results,opts.gwas_cat_dist);
     if gwas_near.shape[0] > 0:
       print "\nFor those variants for which LD buddies could not be computed, there were %i variants within %s of a GWAS hit." % (gwas_near.shape[0],BasePair(opts.gwas_cat_dist).as_kb());
-      out_near_gwas = opts.out + ".near-gwas.tab";
+      out_near_gwas = outprefix + ".near-gwas.tab";
 
       print "These variants were written to: %s" % out_near_gwas;
-      gwas_near.to_csv(out_near_gwas,index=False,sep="\t");
+      gwas_near.to_csv(out_near_gwas,index=False,sep="\t",na_rep="NA");
     else:
       print "\nNo GWAS hits discovered within %s of any clumped results." % BasePair(opts.gwas_cat_dist).as_kb();
 
@@ -387,7 +479,7 @@ def main():
     print "\nLD source: %s" % opts.ld_gwas_source;
     gwas_hits, gwas_ld_failed_variants = gcat.variants_in_ld(results,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist);
 
-    # If the user requested other columns be merged in with the gwas_hits, pull 'em out. 
+    # If the user requested other columns be merged in with the gwas_hits, pull 'em out.
     if opts.include_cols:
       include_cols = [i.strip() for i in opts.include_cols.split(",")];
       include_cols = filter(lambda x: x in results.data.columns,include_cols);
@@ -403,19 +495,87 @@ def main():
         gwas_hits = pd.merge(gwas_hits,assoc_incl_cols,left_on="ASSOC_MARKER",right_on=opts.snp_col);
         del gwas_hits[opts.snp_col];
 
-    out_ld_gwas = opts.out + ".ld-gwas.tab";
+    print "Found %i GWAS catalog variants in LD with a clumped variant.." % gwas_hits.shape[0];
+
+    out_ld_gwas = outprefix + ".ld-gwas.tab";
     print "\nWriting results to: %s" % out_ld_gwas;
-    gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t");
+    gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA");
 
-    results_clumped_ldfail = copy.deepcopy(results_clumped);
-    results_clumped_ldfail.keep_variants(gwas_ld_failed_variants);
+    gwas_near = gcat.variants_nearby(results,opts.gwas_cat_dist);
 
-    gwas_near = gcat.variants_nearby(results_clumped_ldfail,opts.gwas_cat_dist);
     if gwas_near is not None:
-      out_near_gwas = opts.out + ".near-gwas.tab";
-      gwas_near.to_csv(out_near_gwas,index=False,sep="\t");
+      print "\nThere were %i variants within %s of a GWAS hit." % (gwas_near.shape[0],BasePair(opts.gwas_cat_dist).as_kb());
+      out_near_gwas = outprefix + ".near-gwas.tab";
+      print "These variants were written to: %s" % out_near_gwas;
+      gwas_near.to_csv(out_near_gwas,index=False,sep="\t",na_rep="NA");
+
+def proc_multi(trait,opts):
+  log_obj = None;
+  try:
+    # Setup log file.
+    log_file = opts.out + ".%s" % trait + ".log";
+    log_obj = codecs.open(log_file,'w','utf-8');
+
+    sys.stdout = StreamTee(sys.stdout,log_obj);
+    sys.stderr = StreamTee(sys.stderr,log_obj);
+
+    # Run process for this trait.
+    df = multiassoc_epacts_load(opts.assoc,trait);
+    out = opts.out + ".%s" % trait;
+    run_process(df,trait,out,opts);
+
+  except:
+    print >> sys.stderr, traceback.print_exc();
+
+  finally:
+    if log_obj is not None:
+      log_obj.close();
+
+def main():
+  (opts,args) = get_settings();
+
+  # If we're running single threaded, everything will go to the same log file.
+  # Otherwise, each thread will create its own log.
+  if opts.threads == 1:
+    # Setup log file.
+    log_file = opts.out + ".log";
+    log_obj = codecs.open(log_file,'w','utf-8');
+
+    @atexit.register
+    def close_log():
+      try:
+        log_obj.close();
+      except:
+        pass
+
+    sys.stdout = StreamTee(sys.stdout,log_obj);
+    sys.stderr = StreamTee(sys.stderr,log_obj);
+
+  # Loop over traits if multi assoc file, otherwise just load it and do the single trait.
+  if opts.multi_assoc:
+    if opts.threads == 1:
+      print "Running in --multi-assoc mode, loading each trait from assoc file..";
+      for trait, df in multiassoc_epacts_iter(opts.assoc):
+        out = opts.out + ".%s" % trait;
+        run_process(df,trait,out,opts);
+
     else:
-      print "\nFor those variants that did not exist in the VCF file (for computing LD buddies for GWAS hits), there were no GWAS hits within %s." % BasePair(opts.gwas_cat_dist).as_kb();
+      print "Starting threaded.. %i threads allowed simultaneously" % opts.threads;
+
+      pool = Pool(opts.threads);
+      traits = multiassoc_epacts_get_traits(opts.assoc);
+
+      print "Found %i traits in multiassoc file.." % len(traits);
+
+      for trait in traits:
+        pool.apply_async(proc_multi,(trait,opts));
+
+      pool.close();
+      pool.join();
+
+  else:
+    print "Loading trait %s from results file: %s" % (opts.trait,opts.assoc);
+    run_process(opts.assoc,opts.trait,opts.out,opts);
       
 if __name__ == "__main__":
   main();

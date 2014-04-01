@@ -21,6 +21,14 @@ import __builtin__
 import os, sys, decimal, fnmatch, gzip
 from termcolor import colored
 
+def call_ipdb():
+  import sys
+  sys.stdout = sys.__stdout__;
+  sys.stderr = sys.__stderr__;
+
+  import ipdb
+  ipdb.set_trace();
+
 def is_gzip(file,verbose=False):
   import gzip
 

@@ -31,8 +31,9 @@ def sort_genome(dframe,chr_col,pos_col):
   return dframe;
 
 class AssocResults:
-  def __init__(self,filepath=None,trait=None):
+  def __init__(self,filepath=None,trait=None,df=None):
     self.filepath = filepath;
+    self.data = df;
     self.trait = trait;
 
     self.pval_col = "P-value";
@@ -42,8 +43,11 @@ class AssocResults:
     self.rsq_col = "RSQ";
 
   def load(self,*args,**kwargs):
-    compr = 'gzip' if is_gzip(self.filepath) else None;
-    self.data = pd.read_table(self.filepath,compression=compr,*args,**kwargs);
+    # Were we passed in a data frame that's already loaded, or a path to one?
+    if self.data is None:
+      # We don't have an already loaded data frame, so read it in.
+      compr = 'gzip' if is_gzip(self.filepath) else None;
+      self.data = pd.read_table(self.filepath,compression=compr,*args,**kwargs);
 
     for col in ('pval_col','marker_col','chrom_col','pos_col'):
       if self.__dict__[col] not in self.data.columns:

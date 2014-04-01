@@ -31,7 +31,7 @@ class VCFastSettings:
       with open(vcf_path) as jsin:
         self.vcf_path = json.load(jsin);
     else:
-    	self.vcf_path = vcf_path;
+      self.vcf_path = vcf_path;
 
     self.vcfast_path = vcfast_path;
 
@@ -55,6 +55,9 @@ class VCFastFinder():
     self.cache = cache;
     self.cleanup = cleanup;
     self.verbose = verbose;
+
+    self.calc_ok = True;
+    self.calc_fail = False;
 
   def write(self,filename):
     try:
@@ -106,7 +109,7 @@ class VCFastFinder():
     self.chr = chr;
     self.data = None;
     self.min_r2 = min_r2;
-    self.vcfast_ok = True;
+    self.calc_ok = True;
 
     # If the cache has data for this SNP and region, use it.
     # Otherwise, compute it.
@@ -121,13 +124,13 @@ class VCFastFinder():
 
     # Complete successfully?
     # Set by _run_vcfast
-    return self.vcfast_ok;
+    return self.calc_ok;
   
   def _run_vcfast(self):
     if type(self.settings.vcf_path) is dict:
       vcf = self.settings.vcf_path.get(self.chr);
       if vcf is None:
-        self.vcfast_ok = False;
+        self.calc_ok = False;
         print >> sys.stderr, "Error: no VCF file available for chromosome '%s' - maybe a X vs 23 issue?" % self.chr;
         return {};
     else:
@@ -152,7 +155,7 @@ class VCFastFinder():
       print >> sys.stderr, stderr;
 
     if proc.returncode != 0:
-      self.vcfast_ok = False;
+      self.calc_ok = False;
       if not 'Cannot find a SNP at marker position' in stderr:
         print >> sys.stderr, "Error: VCFast did not complete successfully, errors were detected:";
         print >> sys.stderr, stderr;
@@ -175,6 +178,10 @@ class VCFastFinder():
 
         chrpos = "%s:%s" % (e[0],e[1]);
         r2 = float(e[6]);
+
+        if r2 > 1 or r2 < 0:
+          self.calc_ok = False;
+          raise ValueError, "Error calculating LD for variant %s, bad r2 value calculated (likely due to vcfast being used on unphased VCF), value was: %f" % (self.snp,r2);
 
         data[chrpos] = ("NA",r2);
 

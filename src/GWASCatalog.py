@@ -135,13 +135,13 @@ class GWASCatalog:
   # Uses whichever finder/LD source you choose to provide to calculate LD. 
   def variants_in_ld(self,assoc,finder,ld_thresh=0.1,dist=1e6):
     dist = int(dist);
-    vars = assoc.get_snps();
+    variants = assoc.get_snps();
     trait = assoc.trait;
 
     ld_catalog = None;
     failed_ld_variants = [];
-    for v in vars:
-      print "Working on variant %s (%s).." % (v.name,v.chrpos);
+    for v in variants:
+      print "Working on variant %s (%s)" % (v.name,v.chrpos);
       
       ld_ok = finder.compute(v.chrpos,v.chrom,v.pos - dist, v.pos + dist,ld_thresh);
       if ld_ok:
@@ -152,7 +152,7 @@ class GWASCatalog:
         cat_rows['ASSOC_MARKER'] = v.name;
         cat_rows['ASSOC_CHRPOS'] = v.chrpos;
         
-        if trait != None:
+        if trait is not None:
           cat_rows['ASSOC_TRAIT'] = trait;
         else:
           cat_rows['ASSOC_TRAIT'] = "NA";
