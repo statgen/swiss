@@ -47,7 +47,7 @@ class AssocResults:
     if self.data is None:
       # We don't have an already loaded data frame, so read it in.
       compr = 'gzip' if is_gzip(self.filepath) else None;
-      self.data = pd.read_table(self.filepath,compression=compr,*args,**kwargs);
+      self.data = pd.read_table(self.filepath,compression=compr,na_values=["NA","None","."],*args,**kwargs);
 
     for col in ('pval_col','marker_col','chrom_col','pos_col'):
       if self.__dict__[col] not in self.data.columns:
@@ -75,8 +75,11 @@ class AssocResults:
     except:
       error("Imputation quality threshold is not floatable, got: %s" % str(threshold));
 
+    # RSQ needs to be float in order to threshold it correctly 
+    self.data[self.rsq_col] = self.data[self.rsq_col].astype("float");
+
     start = self.data.shape[0];
-    self.data = self.data[self.data[self.rsq_col] >= threshold];
+    self.data = self.data[(self.data[self.rsq_col] >= threshold) | self.data[self.rsq_col].isnull()];
     end = self.data.shape[0];
 
     print "Imputation quality filter removed %i variants.." % (start - end);

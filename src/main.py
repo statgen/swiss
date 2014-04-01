@@ -280,7 +280,7 @@ def multiassoc_epacts_iter(result_file):
 
   print "\nLoading trait %s from association results file: %s" % (base_trait,result_file);
 
-  base_df = pd.read_table(result_file,compression = "gzip" if result_file.endswith(".gz") else None,usecols = base_cols);
+  base_df = pd.read_table(result_file,compression = "gzip" if result_file.endswith(".gz") else None,na_values=["NA","None","."],usecols = base_cols);
   base_df.rename(columns = {base_trait_p : "PVALUE",base_trait_b : "BETA"},inplace=True);
 
   yield (base_trait,base_df);
@@ -291,7 +291,7 @@ def multiassoc_epacts_iter(result_file):
 
     print "\nLoading trait %s from association results file: %s" % (trait,result_file);
 
-    df = pd.read_table(result_file,compression = "gzip" if result_file.endswith(".gz") else None,usecols = [p,bcol]);
+    df = pd.read_table(result_file,compression = "gzip" if result_file.endswith(".gz") else None,na_values=["NA","None","."],usecols = [p,bcol]);
     df.rename(columns = {p : "PVALUE",bcol : "BETA"},inplace=True);
 
     base_df["PVALUE"] = df["PVALUE"];
@@ -317,7 +317,7 @@ def multiassoc_epacts_load(result_file,trait):
     raise IOError, "Requested trait %s is not present in %s" % (trait,result_file);
 
   this_trait_cols = [trait + ".P",trait + ".B"];
-  df = pd.read_table(result_file,compression = "gzip" if result_file.endswith(".gz") else None,usecols = intro_cols + this_trait_cols);
+  df = pd.read_table(result_file,compression = "gzip" if result_file.endswith(".gz") else None,na_values=["NA","None","."],usecols = intro_cols + this_trait_cols);
   df.rename(columns = {
     trait + ".P" : "PVALUE",
     trait + ".B" : "BETA"
