@@ -65,7 +65,7 @@ class AssocResults:
 
     # Try to insert the trait as a column. 
     if 'TRAIT' in self.data.columns:
-      warn("TRAIT column already exists in your association results file, can't put --trait into it!");
+      warning("TRAIT column already exists in your association results file, can't put --trait into it!");
     else:
       self.data['TRAIT'] = self.trait;
 
