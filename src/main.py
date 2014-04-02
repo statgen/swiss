@@ -201,10 +201,11 @@ def get_settings():
     error("Output files already exist with this prefix: %s" % opts.out);
 
   # If multi-assoc is specified, the column names are already known.
-  opts.snp_col = "MARKER_ID";
-  opts.pval_col = "PVALUE";
-  opts.chrom_col = "#CHROM";
-  opts.pos_col = "BEG";
+  if opts.multi_assoc:
+    opts.snp_col = "MARKER_ID";
+    opts.pval_col = "PVALUE";
+    opts.chrom_col = "#CHROM";
+    opts.pos_col = "BEG";
 
   return (opts,args);
 
