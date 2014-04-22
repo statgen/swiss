@@ -37,6 +37,12 @@ from itertools import *
 from VerboseParser import *
 from multiprocessing import Pool, cpu_count
 
+PROG_NAME = "Swiss";
+PROG_VERSION = "0.9.1";
+PROG_DATE = "04/22/2014"
+PROG_AUTHOR = "Ryan Welch (welchr@umich.edu)";
+PROG_URL = "https://github.com/welchr/Swiss";
+
 SWISS_CONF = "conf/swiss.conf";
 __builtin__.SWISS_DEBUG = False;
 
@@ -71,6 +77,25 @@ def getConf(conf_file=SWISS_CONF):
   conf_file = find_relative(conf_file);
   conf = Conf(conf_file);
   return conf;
+
+def print_program_header():
+  prog_string = "%s - %s (%s)" % (PROG_NAME,PROG_VERSION,PROG_DATE);
+  max_length = max(map(len,[prog_string,PROG_AUTHOR,PROG_URL]));
+  max_length += 4; # buffer
+
+  # Top line
+  def print_table_line(width=max_length):
+    print "".join(chain("+",repeat('-',max_length),"+"))
+
+  print_table_line();
+
+  # Rows
+  print "|%s|" % str.center(prog_string,max_length);
+  print_table_line();
+  print "|%s|" % str.center(PROG_AUTHOR,max_length);
+  print_table_line();
+  print "|%s|" % str.center(PROG_URL,max_length);
+  print_table_line();
 
 def get_settings():
   usage = "swiss [options]";
@@ -575,6 +600,8 @@ def proc_multi(trait,opts):
       log_obj.close();
 
 def main():
+  print_program_header();
+  print "";
   (opts,args) = get_settings();
 
   # If we're running single threaded, everything will go to the same log file.
