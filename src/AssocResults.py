@@ -133,8 +133,8 @@ class AssocResults:
 
     tree = ChromTree();
     for i in xrange(self.data.shape[0]):
-      chrom = self.data.iat[i,1];
-      pos = self.data.iat[i,2];
+      chrom = self.data.iat[i,2];
+      pos = self.data.iat[i,3];
 
       if tree.find_overlap(chrom,pos - dist,pos + dist):
         self.data.iat[i,4] = True; # drop column
@@ -142,8 +142,10 @@ class AssocResults:
         tree.add_position(chrom,pos);
 
     final = self.data[self.data.drop_row == False];
-    final = final.sort([self.chrom_col,self.pos_col]);
+    final = sort_genome(final,self.chrom_col,self.pos_col);
     del final['drop_row'];
+
+    self.data = final;
 
   def get_snps(self):
     snps = [];

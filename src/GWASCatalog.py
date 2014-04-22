@@ -60,7 +60,7 @@ class GWASCatalog:
   # Return all rows at a given position. 
   def at_position(self,chrom,pos):
     indices = self.pos_index.get((chrom,pos));
-    if indices != None:
+    if indices is not None:
       return self.data.ix[indices];
     else:
       return None;
@@ -197,40 +197,37 @@ class GWASCatalog:
     trait = assoc.trait;
 
     dist_catalog = None;
-    if len(variants) > 0:
-      for v in variants:
-        # Could do better with interval tree or indexing, but performance is probably fine here (only 10K rows.) 
-        is_near = (self.data['CHR'].map(str) == str(v.chrom)) & (self.data['POS'] > v.pos - dist) & (self.data['POS'] < v.pos + dist); 
-        cat_rows = self.data[is_near];
-        
-        cat_rows['ASSOC_MARKER'] = v.name;
-        cat_rows['ASSOC_CHRPOS'] = v.chrpos;
-        if trait != None:
-          cat_rows['ASSOC_TRAIT'] = trait;
-        else:
-          cat_rows['ASSOC_TRAIT'] = "NA";
-        
-        cat_rows['ASSOC_GWAS_DIST'] = abs(cat_rows['POS'] - v.pos);
+    for v in variants:
+      # Could do better with interval tree or indexing, but performance is probably fine here (only 10K rows.)
+      is_near = (self.data['CHR'].map(str) == str(v.chrom)) & (self.data['POS'] > v.pos - dist) & (self.data['POS'] < v.pos + dist);
+      cat_rows = self.data[is_near];
 
-        dist_catalog = pd.concat([dist_catalog,cat_rows]);
-      
-      if dist_catalog is not None:
-        # Change column names to be more descriptive. 
-        dist_catalog.rename(columns = {
-          'SNP' : 'GWAS_SNP',
-          'CHR' : 'GWAS_CHR',
-          'POS' : 'GWAS_POS',
-          'CHRPOS' : "GWAS_CHRPOS"
-        },inplace=True);
+      cat_rows['ASSOC_MARKER'] = v.name;
+      cat_rows['ASSOC_CHRPOS'] = v.chrpos;
 
-        # Re-order columns. 
-        lead_cols = ['ASSOC_MARKER','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_SNP','GWAS_CHRPOS','ASSOC_GWAS_DIST'];
-        all_cols = dist_catalog.columns.tolist();
-        other_cols = filter(lambda x: x not in lead_cols,all_cols);
-        col_order = lead_cols + other_cols;
-        dist_catalog = dist_catalog[col_order];
+      if trait is not None:
+        cat_rows['ASSOC_TRAIT'] = trait;
+      else:
+        cat_rows['ASSOC_TRAIT'] = "NA";
 
-        # Remove unnecessary columns. 
-        dist_catalog = dist_catalog.drop(['GWAS_CHR','GWAS_POS'],axis=1);
+      cat_rows['ASSOC_GWAS_DIST'] = abs(cat_rows['POS'] - v.pos);
+
+      dist_catalog = pd.concat([dist_catalog,cat_rows]);
+
+    # Change column names to be more descriptive.
+    dist_catalog.rename(
+      columns = dict(zip(self.all_cols,map(lambda x: "GWAS_" + x,self.all_cols))),
+      inplace = True
+    );
+
+    # Re-order columns.
+    lead_cols = ['ASSOC_MARKER','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_SNP','GWAS_CHRPOS','ASSOC_GWAS_DIST'];
+    all_cols = dist_catalog.columns.tolist();
+    other_cols = filter(lambda x: x not in lead_cols,all_cols);
+    col_order = lead_cols + other_cols;
+    dist_catalog = dist_catalog[col_order];
+
+    # Remove unnecessary columns.
+    dist_catalog = dist_catalog.drop(['GWAS_CHR','GWAS_POS'],axis=1);
 
     return dist_catalog; 

@@ -358,6 +358,23 @@ def multiassoc_epacts_get_traits(result_file):
 
   return traits;
 
+def merge_include_cols_gwas_hits(gwas_hits,results,include_cols,snp_col):
+  include_cols = [i.strip() for i in include_cols.split(",")];
+  include_cols = filter(lambda x: x in results.data.columns,include_cols);
+
+  if len(include_cols) == 0:
+    print "Warning: user specified --include-cols, but none of them existed in the association results!";
+  else:
+    assoc_incl_cols = results.data[[snp_col] + include_cols];
+    assoc_incl_cols.rename(
+      columns = dict(zip(include_cols,map(lambda x: "ASSOC_" + x,include_cols))),
+      inplace = True
+    );
+    gwas_hits = pd.merge(gwas_hits,assoc_incl_cols,left_on="ASSOC_MARKER",right_on=snp_col);
+    del gwas_hits[snp_col];
+
+  return gwas_hits;
+
 def run_process(assoc,trait,outprefix,opts):
   if isinstance(assoc,str):
     results = AssocResults(assoc,trait);
@@ -446,19 +463,7 @@ def run_process(assoc,trait,outprefix,opts):
 
     # If the user requested other columns be merged in with the gwas_hits, pull 'em out.
     if opts.include_cols:
-      include_cols = [i.strip() for i in opts.include_cols.split(",")];
-      include_cols = filter(lambda x: x in results_clumped.data.columns,include_cols);
-
-      if len(include_cols) == 0:
-        print "Warning: user specified --include-cols, but none of them existed in the association results!";
-      else:
-        assoc_incl_cols = results_clumped.data[[opts.snp_col] + include_cols];
-        assoc_incl_cols.rename(
-          columns = dict(zip(include_cols,map(lambda x: "ASSOC_" + x,include_cols))),
-          inplace = True
-        );
-        gwas_hits = pd.merge(gwas_hits,assoc_incl_cols,left_on="ASSOC_MARKER",right_on=opts.snp_col);
-        del gwas_hits[opts.snp_col];
+      gwas_hits = merge_include_cols_gwas_hits(gwas_hits,results_clumped,opts.include_cols,opts.snp_col);
 
     out_ld_gwas = outprefix + ".ld-gwas.tab";
     print "\nWriting GWAS catalog variants in LD with clumped variants to: %s" % out_ld_gwas;
@@ -466,10 +471,16 @@ def run_process(assoc,trait,outprefix,opts):
 
     gwas_near = gcat.variants_nearby(results_clumped,opts.gwas_cat_dist);
 
+    # If the user requested other association results columns be merged in with the gwas_hits, add them in.
+    if opts.include_cols:
+      gwas_near = merge_include_cols_gwas_hits(gwas_near,results_clumped,opts.include_cols,opts.snp_col);
+
     if gwas_near is not None:
       out_near_gwas = outprefix + ".near-gwas.tab";
       print "Writing GWAS catalog variants within %s of a clumped variant to: %s" % (BasePair(opts.gwas_cat_dist).as_kb(),out_near_gwas);
       gwas_near.to_csv(out_near_gwas,index=False,sep="\t",na_rep="NA");
+    else:
+      print "\nNo GWAS hits discovered within %s of any clumped results." % BasePair(opts.gwas_cat_dist).as_kb();
 
   elif opts.dist_clump:
     results.dist_clump(opts.clump_p,opts.clump_dist);
@@ -483,17 +494,32 @@ def run_process(assoc,trait,outprefix,opts):
     ];
 
     print results.data[print_cols].to_string(index=False);
-    out_clump = outprefix + ".clump.tab";
+    out_clump = outprefix + ".clump";
 
     print "\nWriting clumped results to: %s" % out_clump;
     results.data.to_csv(out_clump,index=False,sep="\t",na_rep="NA");
 
-    gwas_near = gcat.variants_nearby(results,opts.gwas_cat_dist);
-    if gwas_near.shape[0] > 0:
-      print "\nFor those variants for which LD buddies could not be computed, there were %i variants within %s of a GWAS hit." % (gwas_near.shape[0],BasePair(opts.gwas_cat_dist).as_kb());
-      out_near_gwas = outprefix + ".near-gwas.tab";
+    print "\nFinding clumped results in LD with GWAS catalog variants...";
+    print "\nLD source: %s" % opts.ld_gwas_source;
+    gwas_hits, gwas_ld_failed_variants = gcat.variants_in_ld(results,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist);
 
-      print "These variants were written to: %s" % out_near_gwas;
+    # If the user requested other association results columns be merged in with the gwas_hits, add them in.
+    if opts.include_cols:
+      gwas_hits = merge_include_cols_gwas_hits(gwas_hits,results,opts.include_cols,opts.snp_col);
+
+    out_ld_gwas = outprefix + ".ld-gwas.tab";
+    print "\nWriting GWAS catalog variants in LD with clumped variants to: %s" % out_ld_gwas;
+    gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA");
+
+    gwas_near = gcat.variants_nearby(results,opts.gwas_cat_dist);
+
+    # If the user requested other association results columns be merged in with the gwas_hits, add them in.
+    if opts.include_cols:
+      gwas_near = merge_include_cols_gwas_hits(gwas_near,results,opts.include_cols,opts.snp_col);
+
+    if gwas_near is not None:
+      out_near_gwas = outprefix + ".near-gwas.tab";
+      print "Writing GWAS catalog variants within %s of a clumped variant to: %s" % (BasePair(opts.gwas_cat_dist).as_kb(),out_near_gwas);
       gwas_near.to_csv(out_near_gwas,index=False,sep="\t",na_rep="NA");
     else:
       print "\nNo GWAS hits discovered within %s of any clumped results." % BasePair(opts.gwas_cat_dist).as_kb();
@@ -505,19 +531,7 @@ def run_process(assoc,trait,outprefix,opts):
 
     # If the user requested other columns be merged in with the gwas_hits, pull 'em out.
     if opts.include_cols:
-      include_cols = [i.strip() for i in opts.include_cols.split(",")];
-      include_cols = filter(lambda x: x in results.data.columns,include_cols);
-
-      if len(include_cols) == 0:
-        print "Warning: user specified --include-cols, but none of them existed in the association results!";
-      else:
-        assoc_incl_cols = results.data[[opts.snp_col] + include_cols];
-        assoc_incl_cols.rename(
-          columns = dict(zip(include_cols,map(lambda x: "ASSOC_" + x,include_cols))),
-          inplace = True
-        );
-        gwas_hits = pd.merge(gwas_hits,assoc_incl_cols,left_on="ASSOC_MARKER",right_on=opts.snp_col);
-        del gwas_hits[opts.snp_col];
+      gwas_hits = merge_include_cols_gwas_hits(gwas_hits,results,opts.include_cols,opts.snp_col);
 
     print "Found %i GWAS catalog variants in LD with a clumped variant.." % gwas_hits.shape[0];
 
@@ -527,11 +541,16 @@ def run_process(assoc,trait,outprefix,opts):
 
     gwas_near = gcat.variants_nearby(results,opts.gwas_cat_dist);
 
+    # If the user requested other association results columns be merged in with the gwas_hits, add them in.
+    if opts.include_cols:
+      gwas_near = merge_include_cols_gwas_hits(gwas_near,results,opts.include_cols,opts.snp_col);
+
     if gwas_near is not None:
-      print "\nThere were %i variants within %s of a GWAS hit." % (gwas_near.shape[0],BasePair(opts.gwas_cat_dist).as_kb());
       out_near_gwas = outprefix + ".near-gwas.tab";
-      print "These variants were written to: %s" % out_near_gwas;
+      print "Writing GWAS catalog variants within %s of a clumped variant to: %s" % (BasePair(opts.gwas_cat_dist).as_kb(),out_near_gwas);
       gwas_near.to_csv(out_near_gwas,index=False,sep="\t",na_rep="NA");
+    else:
+      print "\nNo GWAS hits discovered within %s of any clumped results." % BasePair(opts.gwas_cat_dist).as_kb();
 
 def proc_multi(trait,opts):
   log_obj = None;
