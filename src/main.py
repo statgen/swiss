@@ -122,13 +122,13 @@ def get_settings():
 
   # LD clumping options. 
   parser.add_option("--ld-clump",help="Clump association results by LD.",action="store_true",default=False);
-  parser.add_option("--clump-p",help="P-value threshold for LD and distance based clumping.",default=5e-08);
-  parser.add_option("--clump-ld-thresh",help="LD threshold for clumping.",default=0.2);
-  parser.add_option("--clump-ld-dist",help="Distance from each significant result to calculate LD.",default=1E6);
+  parser.add_option("--clump-p",help="P-value threshold for LD and distance based clumping.",default=5e-08,type="float");
+  parser.add_option("--clump-ld-thresh",help="LD threshold for clumping.",default=0.2,type="float");
+  parser.add_option("--clump-ld-dist",help="Distance from each significant result to calculate LD.",default=1E6,type="int");
 
   # Distance clumping options. 
   parser.add_option("--dist-clump",help="Clump association results by distance.",action="store_true",default=False);
-  parser.add_option("--clump-dist",help="Distance threshold to use for clumping based on distance.",default=2.5e5);
+  parser.add_option("--clump-dist",help="Distance threshold to use for clumping based on distance.",default=2.5e5,type="int");
 
   # LD source (GoT2D, 1000G, etc.) 
   parser.add_option("--ld-clump-source",help="Name of pre-configured LD source, or a VCF file from which to compute LD.",default="GOT2D_2011-11");
@@ -138,9 +138,9 @@ def get_settings():
   parser.add_option("--gwas-cat",help="GWAS catalog to use.",default="fusion");
   parser.add_option("--ld-gwas-source",help="Name of pre-configured LD source or VCF file to use when calculating LD with GWAS variants.",default="GOT2D_2011-11");
   parser.add_option("--list-gwas-cats",action="store_true",default=False,help="Give a listing of all valid GWAS catalogs and their descriptions.");
-  parser.add_option("--gwas-cat-p",help="P-value threshold for GWAS catalog variants.",default=5e-08);
-  parser.add_option("--gwas-cat-ld",help="LD threshold for considering a GWAS catalog variant in LD.",default=0.1);
-  parser.add_option("--gwas-cat-dist",help="Distance threshold for considering a GWAS catalog variant 'nearby'.",default=2.5e5);
+  parser.add_option("--gwas-cat-p",help="P-value threshold for GWAS catalog variants.",default=5e-08,type="float");
+  parser.add_option("--gwas-cat-ld",help="LD threshold for considering a GWAS catalog variant in LD.",default=0.1,type="float");
+  parser.add_option("--gwas-cat-dist",help="Distance threshold for considering a GWAS catalog variant 'nearby'.",type="int",default=2.5e5);
   parser.add_option("--include-cols",help="List of columns to merge in from association results (grouped by variant.)",default=None);
 
   # LD cache
@@ -197,7 +197,7 @@ def get_settings():
   if not os.path.isfile(opts.gwas_cat):
     opts.gwas_cat_file = find_relative(conf.GWAS_CATALOGS[opts.build][opts.gwas_cat]);
 
-    if opts.gwas_cat_file == None:
+    if opts.gwas_cat_file is None:
       error("Could not locate GWAS catalog file for conf entry '%s - %s'!" % (opts.build,opts.gwas_cat));
   else:
     opts.gwas_cat_file = opts.gwas_cat;
@@ -214,7 +214,7 @@ def get_settings():
   if not os.path.isfile(opts.ld_clump_source):
     opts.ld_clump_source_file = find_relative(conf.LD_SOURCES[opts.build][opts.ld_clump_source]);
 
-    if opts.ld_clump_source_file == None:
+    if opts.ld_clump_source_file is None:
       error("Could not locate VCF file for conf entry '%s - %s'!" % (opts.build,opts.ld_clump_source));
   else:
     opts.ld_clump_source_file = opts.ld_clump_source;
@@ -223,7 +223,7 @@ def get_settings():
   if not os.path.isfile(opts.ld_gwas_source):
     opts.ld_gwas_source_file = find_relative(conf.LD_SOURCES[opts.build][opts.ld_gwas_source]);
 
-    if opts.ld_gwas_source_file == None:
+    if opts.ld_gwas_source_file is None:
       error("Could not locate VCF file for conf entry '%s - %s'!" % (opts.build,opts.ld_gwas_source));
   else:
     opts.ld_gwas_source_file = opts.ld_gwas_source;
@@ -475,8 +475,8 @@ def run_process(assoc,trait,outprefix,opts):
       'ld_with',
       'failed_clump'
     ];
-
     print results_clumped.data[print_cols].to_string(index=False);
+
     out_clump = outprefix + ".clump";
 
     print "\nWriting clumped results to: %s" % out_clump;
@@ -486,21 +486,24 @@ def run_process(assoc,trait,outprefix,opts):
     print "\nLD source: %s" % opts.ld_gwas_source;
     gwas_hits, gwas_ld_failed_variants = gcat.variants_in_ld(results_clumped,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist);
 
-    # If the user requested other columns be merged in with the gwas_hits, pull 'em out.
-    if opts.include_cols:
-      gwas_hits = merge_include_cols_gwas_hits(gwas_hits,results_clumped,opts.include_cols,opts.snp_col);
+    if gwas_hits is not None:
+      # If the user requested other columns be merged in with the gwas_hits, pull 'em out.
+      if opts.include_cols:
+        gwas_hits = merge_include_cols_gwas_hits(gwas_hits,results_clumped,opts.include_cols,opts.snp_col);
 
-    out_ld_gwas = outprefix + ".ld-gwas.tab";
-    print "\nWriting GWAS catalog variants in LD with clumped variants to: %s" % out_ld_gwas;
-    gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA");
+      out_ld_gwas = outprefix + ".ld-gwas.tab";
+      print "\nWriting GWAS catalog variants in LD with clumped variants to: %s" % out_ld_gwas;
+      gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA");
+    else:
+      print "\nNo GWAS hits were in LD with clumped variants.";
 
     gwas_near = gcat.variants_nearby(results_clumped,opts.gwas_cat_dist);
 
-    # If the user requested other association results columns be merged in with the gwas_hits, add them in.
-    if opts.include_cols:
-      gwas_near = merge_include_cols_gwas_hits(gwas_near,results_clumped,opts.include_cols,opts.snp_col);
-
     if gwas_near is not None:
+      # If the user requested other association results columns be merged in with the gwas_hits, add them in.
+      if opts.include_cols:
+        gwas_near = merge_include_cols_gwas_hits(gwas_near,results_clumped,opts.include_cols,opts.snp_col);
+
       out_near_gwas = outprefix + ".near-gwas.tab";
       print "Writing GWAS catalog variants within %s of a clumped variant to: %s" % (BasePair(opts.gwas_cat_dist).as_kb(),out_near_gwas);
       gwas_near.to_csv(out_near_gwas,index=False,sep="\t",na_rep="NA");
@@ -508,7 +511,11 @@ def run_process(assoc,trait,outprefix,opts):
       print "\nNo GWAS hits discovered within %s of any clumped results." % BasePair(opts.gwas_cat_dist).as_kb();
 
   elif opts.dist_clump:
-    results.dist_clump(opts.clump_p,opts.clump_dist);
+    dist_ok = results.dist_clump(opts.clump_p,opts.clump_dist);
+
+    if dist_ok is None:
+      print "\nNo significant variants available for distance clumping, skipping..";
+      return;
 
     print "\nResults after clumping: ";
     print_cols = [
@@ -528,21 +535,24 @@ def run_process(assoc,trait,outprefix,opts):
     print "\nLD source: %s" % opts.ld_gwas_source;
     gwas_hits, gwas_ld_failed_variants = gcat.variants_in_ld(results,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist);
 
-    # If the user requested other association results columns be merged in with the gwas_hits, add them in.
-    if opts.include_cols:
-      gwas_hits = merge_include_cols_gwas_hits(gwas_hits,results,opts.include_cols,opts.snp_col);
+    if gwas_hits is not None:
+      # If the user requested other association results columns be merged in with the gwas_hits, add them in.
+      if opts.include_cols:
+        gwas_hits = merge_include_cols_gwas_hits(gwas_hits,results,opts.include_cols,opts.snp_col);
 
-    out_ld_gwas = outprefix + ".ld-gwas.tab";
-    print "\nWriting GWAS catalog variants in LD with clumped variants to: %s" % out_ld_gwas;
-    gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA");
+      out_ld_gwas = outprefix + ".ld-gwas.tab";
+      print "\nWriting GWAS catalog variants in LD with clumped variants to: %s" % out_ld_gwas;
+      gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA");
+    else:
+      print "\nNo GWAS hits were in LD with clumped variants.";
 
     gwas_near = gcat.variants_nearby(results,opts.gwas_cat_dist);
 
-    # If the user requested other association results columns be merged in with the gwas_hits, add them in.
-    if opts.include_cols:
-      gwas_near = merge_include_cols_gwas_hits(gwas_near,results,opts.include_cols,opts.snp_col);
-
     if gwas_near is not None:
+      # If the user requested other association results columns be merged in with the gwas_hits, add them in.
+      if opts.include_cols:
+        gwas_near = merge_include_cols_gwas_hits(gwas_near,results,opts.include_cols,opts.snp_col);
+
       out_near_gwas = outprefix + ".near-gwas.tab";
       print "Writing GWAS catalog variants within %s of a clumped variant to: %s" % (BasePair(opts.gwas_cat_dist).as_kb(),out_near_gwas);
       gwas_near.to_csv(out_near_gwas,index=False,sep="\t",na_rep="NA");
@@ -554,23 +564,26 @@ def run_process(assoc,trait,outprefix,opts):
     print "\nLD source: %s" % opts.ld_gwas_source;
     gwas_hits, gwas_ld_failed_variants = gcat.variants_in_ld(results,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist);
 
-    # If the user requested other columns be merged in with the gwas_hits, pull 'em out.
-    if opts.include_cols:
-      gwas_hits = merge_include_cols_gwas_hits(gwas_hits,results,opts.include_cols,opts.snp_col);
+    if gwas_hits is not None:
+      # If the user requested other columns be merged in with the gwas_hits, pull 'em out.
+      if opts.include_cols:
+        gwas_hits = merge_include_cols_gwas_hits(gwas_hits,results,opts.include_cols,opts.snp_col);
 
-    print "Found %i GWAS catalog variants in LD with a clumped variant.." % gwas_hits.shape[0];
+      print "Found %i GWAS catalog variants in LD with a clumped variant.." % gwas_hits.shape[0];
 
-    out_ld_gwas = outprefix + ".ld-gwas.tab";
-    print "\nWriting results to: %s" % out_ld_gwas;
-    gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA");
+      out_ld_gwas = outprefix + ".ld-gwas.tab";
+      print "\nWriting results to: %s" % out_ld_gwas;
+      gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA");
+    else:
+      print "\nNo GWAS hits were in LD with clumped variants.";
 
     gwas_near = gcat.variants_nearby(results,opts.gwas_cat_dist);
 
-    # If the user requested other association results columns be merged in with the gwas_hits, add them in.
-    if opts.include_cols:
-      gwas_near = merge_include_cols_gwas_hits(gwas_near,results,opts.include_cols,opts.snp_col);
-
     if gwas_near is not None:
+      # If the user requested other association results columns be merged in with the gwas_hits, add them in.
+      if opts.include_cols:
+        gwas_near = merge_include_cols_gwas_hits(gwas_near,results,opts.include_cols,opts.snp_col);
+
       out_near_gwas = outprefix + ".near-gwas.tab";
       print "Writing GWAS catalog variants within %s of a clumped variant to: %s" % (BasePair(opts.gwas_cat_dist).as_kb(),out_near_gwas);
       gwas_near.to_csv(out_near_gwas,index=False,sep="\t",na_rep="NA");

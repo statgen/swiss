@@ -146,6 +146,7 @@ class AssocResults:
     del final['drop_row'];
 
     self.data = final;
+    return final;
 
   def get_snps(self):
     snps = [];
@@ -159,3 +160,9 @@ class AssocResults:
       snps.append(s);
 
     return snps;
+
+  def has_rows(self):
+    if self.data.shape[0] <= 0:
+      return False;
+    else:
+      return True;

@@ -165,29 +165,30 @@ class GWASCatalog:
 
         warning("could not calculate LD for variant %s (%s) - you should try a different source of LD information to properly clump these variants." % (v.name,v.chrpos));
 
-    # Change column names to be more descriptive. 
-    ld_catalog.rename(
-      columns = dict(zip(self.all_cols,map(lambda x: "GWAS_" + x,self.all_cols))),
-      inplace = True
-    );
+    # Change column names to be more descriptive.
+    if ld_catalog is not None:
+      ld_catalog.rename(
+        columns = dict(zip(self.all_cols,map(lambda x: "GWAS_" + x,self.all_cols))),
+        inplace = True
+      );
 
-#    ld_catalog.rename(columns = {
-#      'SNP' : 'GWAS_SNP',
-#      'CHR' : 'GWAS_CHR',
-#      'POS' : 'GWAS_POS',
-#      'CHRPOS' : "GWAS_CHRPOS"
-#    },inplace=True);
+  #    ld_catalog.rename(columns = {
+  #      'SNP' : 'GWAS_SNP',
+  #      'CHR' : 'GWAS_CHR',
+  #      'POS' : 'GWAS_POS',
+  #      'CHRPOS' : "GWAS_CHRPOS"
+  #    },inplace=True);
 
-    # TODO: clean this up, string literals instead of asking the assoc object what the columns are!
-    # Re-order columns. 
-    lead_cols = ['ASSOC_MARKER','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_SNP','GWAS_CHRPOS','ASSOC_GWAS_LD'];
-    all_cols = ld_catalog.columns.tolist();
-    other_cols = filter(lambda x: x not in lead_cols,all_cols);
-    col_order = lead_cols + other_cols;
-    ld_catalog = ld_catalog[col_order];
+      # TODO: clean this up, string literals instead of asking the assoc object what the columns are!
+      # Re-order columns.
+      lead_cols = ['ASSOC_MARKER','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_SNP','GWAS_CHRPOS','ASSOC_GWAS_LD'];
+      all_cols = ld_catalog.columns.tolist();
+      other_cols = filter(lambda x: x not in lead_cols,all_cols);
+      col_order = lead_cols + other_cols;
+      ld_catalog = ld_catalog[col_order];
 
-    # Remove unnecessary columns. 
-    ld_catalog = ld_catalog.drop(['GWAS_CHR','GWAS_POS'],axis=1);
+      # Remove unnecessary columns.
+      ld_catalog = ld_catalog.drop(['GWAS_CHR','GWAS_POS'],axis=1);
 
     return ld_catalog, failed_ld_variants;
 
@@ -215,19 +216,20 @@ class GWASCatalog:
       dist_catalog = pd.concat([dist_catalog,cat_rows]);
 
     # Change column names to be more descriptive.
-    dist_catalog.rename(
-      columns = dict(zip(self.all_cols,map(lambda x: "GWAS_" + x,self.all_cols))),
-      inplace = True
-    );
+    if dist_catalog is not None:
+      dist_catalog.rename(
+        columns = dict(zip(self.all_cols,map(lambda x: "GWAS_" + x,self.all_cols))),
+        inplace = True
+      );
 
-    # Re-order columns.
-    lead_cols = ['ASSOC_MARKER','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_SNP','GWAS_CHRPOS','ASSOC_GWAS_DIST'];
-    all_cols = dist_catalog.columns.tolist();
-    other_cols = filter(lambda x: x not in lead_cols,all_cols);
-    col_order = lead_cols + other_cols;
-    dist_catalog = dist_catalog[col_order];
+      # Re-order columns.
+      lead_cols = ['ASSOC_MARKER','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_SNP','GWAS_CHRPOS','ASSOC_GWAS_DIST'];
+      all_cols = dist_catalog.columns.tolist();
+      other_cols = filter(lambda x: x not in lead_cols,all_cols);
+      col_order = lead_cols + other_cols;
+      dist_catalog = dist_catalog[col_order];
 
-    # Remove unnecessary columns.
-    dist_catalog = dist_catalog.drop(['GWAS_CHR','GWAS_POS'],axis=1);
+      # Remove unnecessary columns.
+      dist_catalog = dist_catalog.drop(['GWAS_CHR','GWAS_POS'],axis=1);
 
     return dist_catalog; 
