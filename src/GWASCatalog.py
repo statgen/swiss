@@ -5,7 +5,43 @@ from termcolor import *
 from Variant import *
 from subprocess import Popen,PIPE
 from utils import *
+from copy import deepcopy
+from multiprocessing import *
+from itertools import *
 import sys
+
+def worker_ld_multi(args):
+  v = args[0];
+  conf = args[1];
+
+  finder = conf['finder'];
+  dist = conf['dist'];
+  ld_thresh = conf['ld_thresh'];
+  trait = conf['trait'];
+  gwascat = conf['gwascat'];
+
+  print "Working on finding GWAS catalog overlap for variant %s (%s)" % (v.name,v.chrpos);
+
+  ld_ok = finder.compute(v.chrpos,v.chrom,v.pos - dist, v.pos + dist,ld_thresh);
+  if ld_ok:
+    ld_snps = {j for j in finder.data.iterkeys()};
+    cat_rows = gwascat[gwascat['CHRPOS'].isin(ld_snps)];
+
+    cat_rows['ASSOC_MARKER'] = v.name;
+    cat_rows['ASSOC_CHRPOS'] = v.chrpos;
+
+    if trait is not None:
+      cat_rows['ASSOC_TRAIT'] = trait;
+    else:
+      cat_rows['ASSOC_TRAIT'] = "NA";
+
+    cat_rows['ASSOC_GWAS_LD'] = [finder.data.get(x)[1] for x in cat_rows['CHRPOS']];
+
+  else:
+    cat_rows = None;
+    warning("could not calculate LD for variant %s (%s) - you should try a different source of LD information to properly clump these variants." % (v.name,v.chrpos));
+
+  return cat_rows;
 
 class GWASCatalog:
   def __init__(self,filepath):
@@ -19,7 +55,9 @@ class GWASCatalog:
     self.col_trait = "PHENO";
     self.col_pvalue = "P_VALUE";
     self.build = "hg18";
-    
+
+    self.data = None;
+    self.all_cols = None;
     self.pos_index = {};
 
     self._load();
@@ -178,6 +216,62 @@ class GWASCatalog:
   #      'POS' : 'GWAS_POS',
   #      'CHRPOS' : "GWAS_CHRPOS"
   #    },inplace=True);
+
+      # TODO: clean this up, string literals instead of asking the assoc object what the columns are!
+      # Re-order columns.
+      lead_cols = ['ASSOC_MARKER','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_SNP','GWAS_CHRPOS','ASSOC_GWAS_LD'];
+      all_cols = ld_catalog.columns.tolist();
+      other_cols = filter(lambda x: x not in lead_cols,all_cols);
+      col_order = lead_cols + other_cols;
+      ld_catalog = ld_catalog[col_order];
+
+      # Remove unnecessary columns.
+      ld_catalog = ld_catalog.drop(['GWAS_CHR','GWAS_POS'],axis=1);
+
+    return ld_catalog, failed_ld_variants;
+
+  # Parallel version of variants_in_ld
+  def variants_in_ld_multi(self,assoc,finder,ld_thresh=0.1,dist=1e6,num_threads=2):
+    dist = int(dist);
+    variants = assoc.get_snps();
+    trait = assoc.trait;
+
+    # Pool of workers
+    pool = Pool(num_threads);
+
+    # Pack up all of the settings needed for the worker process
+    def get_local_settings():
+      while 1:
+        settings = {
+          'finder' : deepcopy(finder),
+          'ld_thresh' : ld_thresh,
+          'dist' : dist,
+          'trait' : trait,
+          'gwascat' : self.data
+        }
+
+        yield settings;
+
+    # Block until all of the GWAS catalog lookups per variant have completed
+    results = pool.map(worker_ld_multi,izip(variants,get_local_settings()));
+
+    # Which variants didn't complete OK?
+    failed_ld_variants = [];
+    for i in xrange(len(results)):
+      if results[i] is None:
+        failed_ld_variants.append(variants[i]);
+
+    try:
+      ld_catalog = pd.concat(results);
+    except:
+      ld_catalog = None;
+
+    # Change column names to be more descriptive.
+    if ld_catalog is not None:
+      ld_catalog.rename(
+        columns = dict(zip(self.all_cols,map(lambda x: "GWAS_" + x,self.all_cols))),
+        inplace = True
+      );
 
       # TODO: clean this up, string literals instead of asking the assoc object what the columns are!
       # Re-order columns.

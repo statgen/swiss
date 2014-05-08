@@ -484,7 +484,7 @@ def run_process(assoc,trait,outprefix,opts):
 
     print "\nFinding clumped results in LD with GWAS catalog variants...";
     print "\nLD source: %s" % opts.ld_gwas_source;
-    gwas_hits, gwas_ld_failed_variants = gcat.variants_in_ld(results_clumped,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist);
+    gwas_hits, gwas_ld_failed_variants = gcat.variants_in_ld_multi(results_clumped,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist,opts.threads);
 
     if gwas_hits is not None:
       # If the user requested other columns be merged in with the gwas_hits, pull 'em out.
@@ -533,7 +533,7 @@ def run_process(assoc,trait,outprefix,opts):
 
     print "\nFinding clumped results in LD with GWAS catalog variants...";
     print "\nLD source: %s" % opts.ld_gwas_source;
-    gwas_hits, gwas_ld_failed_variants = gcat.variants_in_ld(results,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist);
+    gwas_hits, gwas_ld_failed_variants = gcat.variants_in_ld_multi(results,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist,opts.threads);
 
     if gwas_hits is not None:
       # If the user requested other association results columns be merged in with the gwas_hits, add them in.
@@ -562,7 +562,7 @@ def run_process(assoc,trait,outprefix,opts):
   else:
     print "\nFinding results in LD with GWAS catalog variants...";
     print "\nLD source: %s" % opts.ld_gwas_source;
-    gwas_hits, gwas_ld_failed_variants = gcat.variants_in_ld(results,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist);
+    gwas_hits, gwas_ld_failed_variants = gcat.variants_in_ld_multi(results,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist,opts.threads);
 
     if gwas_hits is not None:
       # If the user requested other columns be merged in with the gwas_hits, pull 'em out.
