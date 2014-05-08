@@ -10,7 +10,7 @@ def unique_by_pos(variant_list):
   final = [];
   seen = set();
   for v in variant_list:
-    if v.chrpos == None:
+    if v.chrpos is None:
       continue;
     
     has = v.chrpos in seen;
@@ -38,13 +38,13 @@ class Variant:
 
     self.pos_callable = pos_callable;
 
-    if string != None:
+    if string is not None:
       self.from_str(string);
 
   # chr4:939191
   def from_chrpos(self,chrpos):
     res = re.search("chr(.+?)\:(\d+)",chrpos);
-    if res != None:
+    if res is not None:
       self.chrom = res.groups()[0];
       self.pos = int(res.groups()[1]);
       self.chrpos = "%s:%s" % (self.chrom,self.pos);
@@ -56,10 +56,10 @@ class Variant:
   def from_rsid(self,rsid):
     self.name = rsid;
 
-    if self.pos_callable != None:
+    if self.pos_callable is not None:
       (chrom,pos) = pos_callable(rsid);
 
-      if chrom != None and pos != None:
+      if chrom is not None and pos is not None:
         self.chrom = chrom;
         self.pos = pos;
         self.chrpos = "%s:%s" % (chrom,pos);
@@ -67,7 +67,7 @@ class Variant:
   # 11-1414141
   def from_dash(self,dash):
     res = re.search("(.+?)\-(\d+)",dash);
-    if res != None:
+    if res is not None:
       self.chrom = res.groups()[0];
       self.pos = int(res.groups()[1]);
       self.chrpos = "%s:%s" % (self.chrom,self.pos);
@@ -79,9 +79,9 @@ class Variant:
   def from_str(self,string):
     if all([x in string for x in [':','chr']]):
       self.from_chrpos(string);
-    elif re.search("(.+?)\-(\d+)",string) != None:
+    elif re.search("(.+?)\-(\d+)",string) is not None:
       self.from_dash(string);
-    elif re.search("rs(\d+)",string) != None:
+    elif re.search("rs(\d+)",string) is not None:
       self.from_rsid(string);
     else:
       # Doesn't seem to have a known format - 

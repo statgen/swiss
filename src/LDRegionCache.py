@@ -46,7 +46,7 @@ class LDRegionCache():
 
     # Check protocol. 
     proto = self.db.get('proto');
-    if proto == None or proto != LD_CACHE_PROTOCOL:
+    if proto is None or proto != LD_CACHE_PROTOCOL:
       if existed:
         print >> sys.stderr, "Error: LD cache was created with an older version"\
         " of the program. Please delete '%s', or specify a new cache file, and re-run." % dbfile;
@@ -65,7 +65,7 @@ class LDRegionCache():
       print >> sys.stderr, "Protocol version: %s" % self.db.get('proto');
       sys.exit(1);
       
-    if self.root == None:
+    if self.root is None:
       print >> sys.stderr, "Creating new LD cache branch for current LD source/population/build..";
 
       new_root = {};
@@ -83,7 +83,7 @@ class LDRegionCache():
   # Stop - stop position of interval calculated
   # Data - dictionary of LD values, where keys are 'other' SNPs, values are LD
   def updateLD(self,refsnp,start,stop,data):
-    if data != None and len(data) > 0:
+    if data is not None and len(data) > 0:
       refsnp_root = self.root.setdefault(refsnp,{});
       refsnp_root['start'] = start;
       refsnp_root['stop'] = stop;
@@ -109,7 +109,7 @@ class LDRegionCache():
       lock.acquire();
 
       # Update database.
-      if self.root != None:
+      if self.root is not None:
         self.db[self.key] = self.root;
         self.db.close();
 

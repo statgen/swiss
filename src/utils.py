@@ -110,7 +110,7 @@ def find_relative(file):
   if file_path != "":
     root_dir = os.path.abspath(os.path.join(root_dir,file_path));
   
-  if file_name == "" or file_name == None:
+  if file_name == "" or file_name is None:
     if os.path.exists(root_dir):
       full_path = root_dir;
   else:
@@ -134,7 +134,7 @@ def locate(pattern, root=os.curdir, followlinks=True):
 # 2) relative to m2zfast's root directory
 # 3) on the user's path
 def find_systematic(file):
-  if file == None:
+  if file is None:
     return None;
 
   if os.path.isfile(file):
@@ -145,7 +145,7 @@ def find_systematic(file):
     return relative;
   
   whiched_file = which(file);
-  if whiched_file != None:
+  if whiched_file is not None:
     return whiched_file;   
  
   return None;

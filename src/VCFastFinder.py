@@ -18,7 +18,7 @@ class VCFastSettings:
         continue;
       
       path = find_systematic(value);
-      if path == None or not os.path.exists(path):
+      if path is None or not os.path.exists(path):
         if arg == "vcfast_path":
           error("cannot find vcfast - please set the path in the configuration file, or make it available on your PATH.");
         else:

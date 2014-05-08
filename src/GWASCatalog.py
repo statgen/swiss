@@ -158,7 +158,7 @@ class GWASCatalog:
         raise Exception;
 
       for line in stdout.split("\n"):
-        if line.strip() == '' or line == None:
+        if line.strip() == '' or line is None:
           continue;
 
         lsplit = line.split();

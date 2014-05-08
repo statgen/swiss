@@ -5,7 +5,7 @@ import sys
 from utils import *
 
 def parse1000G(snp):
-  if snp == None:
+  if snp is None:
     return None;
 
   c = snp.split(":");

@@ -16,10 +16,10 @@ class ChromTree:
 
   def find_overlap(self,chrom,start,end=None):
     node = self.chrom.get(chrom);
-    if node == None:
+    if node is None:
       return None;
     else:
-      if end == None:
+      if end is None:
         end = start;
       return node.find(start,end);
 

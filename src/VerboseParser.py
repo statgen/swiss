@@ -43,7 +43,7 @@ class VerboseParser(OptionParser):
       if option.help == "SUPPRESSHELP":
         continue;
 
-      if option.type != None:
+      if option.type is not None:
         print fill(", ".join(option._short_opts + option._long_opts) + " <%s>" % option.type,\
           initial_indent="  ",subsequent_indent="  ",width=console_width);
       else:
