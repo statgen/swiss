@@ -484,16 +484,16 @@ def run_process(assoc,trait,outprefix,opts):
 
     print "\nFinding clumped results in LD with GWAS catalog variants...";
     print "\nLD source: %s" % opts.ld_gwas_source;
-    gwas_hits, gwas_ld_failed_variants = gcat.variants_in_ld_multi(results_clumped,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist,opts.threads);
+    gwas_ld, gwas_ld_failed_variants = gcat.variants_in_ld_multi(results_clumped,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist,opts.threads);
 
-    if gwas_hits is not None:
-      # If the user requested other columns be merged in with the gwas_hits, pull 'em out.
+    if gwas_ld is not None:
+      # If the user requested other columns be merged in with the gwas_ld, pull 'em out.
       if opts.include_cols:
-        gwas_hits = merge_include_cols_gwas_hits(gwas_hits,results_clumped,opts.include_cols,opts.snp_col);
+        gwas_ld = merge_include_cols_gwas_hits(gwas_ld,results_clumped,opts.include_cols,opts.snp_col);
 
       out_ld_gwas = outprefix + ".ld-gwas.tab";
       print "\nWriting GWAS catalog variants in LD with clumped variants to: %s" % out_ld_gwas;
-      gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA");
+      gwas_ld.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA");
     else:
       print "\nNo GWAS hits were in LD with clumped variants.";
 
@@ -533,16 +533,16 @@ def run_process(assoc,trait,outprefix,opts):
 
     print "\nFinding clumped results in LD with GWAS catalog variants...";
     print "\nLD source: %s" % opts.ld_gwas_source;
-    gwas_hits, gwas_ld_failed_variants = gcat.variants_in_ld_multi(results,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist,opts.threads);
+    gwas_ld, gwas_ld_failed_variants = gcat.variants_in_ld_multi(results,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist,opts.threads);
 
-    if gwas_hits is not None:
-      # If the user requested other association results columns be merged in with the gwas_hits, add them in.
+    if gwas_ld is not None:
+      # If the user requested other association results columns be merged in with the gwas_ld, add them in.
       if opts.include_cols:
-        gwas_hits = merge_include_cols_gwas_hits(gwas_hits,results,opts.include_cols,opts.snp_col);
+        gwas_ld = merge_include_cols_gwas_hits(gwas_ld,results,opts.include_cols,opts.snp_col);
 
       out_ld_gwas = outprefix + ".ld-gwas.tab";
       print "\nWriting GWAS catalog variants in LD with clumped variants to: %s" % out_ld_gwas;
-      gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA");
+      gwas_ld.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA");
     else:
       print "\nNo GWAS hits were in LD with clumped variants.";
 
@@ -562,18 +562,18 @@ def run_process(assoc,trait,outprefix,opts):
   else:
     print "\nFinding results in LD with GWAS catalog variants...";
     print "\nLD source: %s" % opts.ld_gwas_source;
-    gwas_hits, gwas_ld_failed_variants = gcat.variants_in_ld_multi(results,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist,opts.threads);
+    gwas_ld, gwas_ld_failed_variants = gcat.variants_in_ld_multi(results,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist,opts.threads);
 
-    if gwas_hits is not None:
-      # If the user requested other columns be merged in with the gwas_hits, pull 'em out.
+    if gwas_ld is not None:
+      # If the user requested other columns be merged in with the gwas_ld, pull 'em out.
       if opts.include_cols:
-        gwas_hits = merge_include_cols_gwas_hits(gwas_hits,results,opts.include_cols,opts.snp_col);
+        gwas_ld = merge_include_cols_gwas_hits(gwas_ld,results,opts.include_cols,opts.snp_col);
 
-      print "Found %i GWAS catalog variants in LD with a clumped variant.." % gwas_hits.shape[0];
+      print "Found %i GWAS catalog variants in LD with a clumped variant.." % gwas_ld.shape[0];
 
       out_ld_gwas = outprefix + ".ld-gwas.tab";
       print "\nWriting results to: %s" % out_ld_gwas;
-      gwas_hits.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA");
+      gwas_ld.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA");
     else:
       print "\nNo GWAS hits were in LD with clumped variants.";
 

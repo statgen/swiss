@@ -11,11 +11,11 @@ def unique_by_pos(variant_list):
   seen = set();
   for v in variant_list:
     if v.chrpos == None:
-      next;
+      continue;
     
     has = v.chrpos in seen;
     if has:
-      next;
+      continue;
     else:
       seen.add(v.chrpos);
       final.append(v);
