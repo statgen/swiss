@@ -138,6 +138,8 @@ def get_settings():
   parser.add_option("--gwas-cat",help="GWAS catalog to use.",default="fusion");
   parser.add_option("--ld-gwas-source",help="Name of pre-configured LD source or VCF file to use when calculating LD with GWAS variants.",default="GOT2D_2011-11");
   parser.add_option("--list-gwas-cats",action="store_true",default=False,help="Give a listing of all valid GWAS catalogs and their descriptions.");
+  parser.add_option("--list-gwas-traits",action="store_true",default=False,help="List all of the available traits in a selected GWAS catalog.");
+  parser.add_option("--list-gwas-trait-groups",action="store_true",default=False,help="List all of the available groupings of traits in a selected GWAS catalog.");
   parser.add_option("--gwas-cat-p",help="P-value threshold for GWAS catalog variants.",default=5e-08,type="float");
   parser.add_option("--gwas-cat-ld",help="LD threshold for considering a GWAS catalog variant in LD.",default=0.1,type="float");
   parser.add_option("--gwas-cat-dist",help="Distance threshold for considering a GWAS catalog variant 'nearby'.",type="int",default=2.5e5);
@@ -162,6 +164,38 @@ def get_settings():
   if opts.list_gwas_cats:
     print_gwas();
     sys.exit(0);
+
+  if not os.path.isfile(opts.gwas_cat):
+    opts.gwas_cat_file = find_relative(conf.GWAS_CATALOGS[opts.build][opts.gwas_cat]);
+
+    if opts.gwas_cat_file is None:
+      error("Could not locate GWAS catalog file for conf entry '%s - %s'!" % (opts.build,opts.gwas_cat));
+  else:
+    opts.gwas_cat_file = opts.gwas_cat;
+
+  if opts.gwas_cat_file is not None:
+    gcat = GWASCatalog(opts.gwas_cat_file);
+
+    if opts.list_gwas_traits:
+      print "Available traits for GWAS catalog '%s': \n" % opts.gwas_cat;
+      for group, traits in gcat.get_trait_group_pairs():
+        print group;
+        print "".join(['-' for _ in xrange(len(group))]);
+        print "";
+
+        for t in traits:
+          print t;
+
+        print "";
+
+      sys.exit(0);
+
+    elif opts.list_gwas_trait_groups:
+      print "Available trait groups for GWAS catalog '%s': " % opts.gwas_cat;
+      for group in sorted(gcat.get_trait_groups()):
+        print group;
+
+      sys.exit(0);
 
   if opts.list_ld_sources:
     print_ld_sources();
@@ -193,14 +227,6 @@ def get_settings():
     error("P-value threshold must be >= 0 or <= 1.");
 
   opts.clump_ld_dist = int(float(opts.clump_ld_dist));
-
-  if not os.path.isfile(opts.gwas_cat):
-    opts.gwas_cat_file = find_relative(conf.GWAS_CATALOGS[opts.build][opts.gwas_cat]);
-
-    if opts.gwas_cat_file is None:
-      error("Could not locate GWAS catalog file for conf entry '%s - %s'!" % (opts.build,opts.gwas_cat));
-  else:
-    opts.gwas_cat_file = opts.gwas_cat;
 
   # If one source is specified, but not the other, assume the user meant to use this for both. 
   # ld clump source XOR ld gwas source

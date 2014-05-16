@@ -53,6 +53,7 @@ class GWASCatalog:
     self.col_chr = "CHR";
     self.col_pos = "POS";
     self.col_trait = "PHENO";
+    self.col_trait_group = "Group";
     self.col_pvalue = "P_VALUE";
     self.build = "hg18";
 
@@ -91,6 +92,15 @@ class GWASCatalog:
       row_chrom = row[self.col_chr];
       row_pos = row[self.col_pos];
       self.pos_index.setdefault((row_chrom,row_pos),[]).append(row_index);
+
+  def get_traits(self):
+    return set(self.data[self.col_trait]);
+
+  def get_trait_groups(self):
+    return set(self.data[self.col_trait_group]);
+
+  def get_trait_group_pairs(self):
+    return [(x[0], sorted(x[1].PHENO.unique())) for x in self.data.groupby("Group")];
 
   def num_variants(self):
     return self.data.shape[0];
