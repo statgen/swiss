@@ -153,7 +153,7 @@ class GWASCatalog:
         
         vcf = vcf_dict.get(cat_chrom);
         if vcf is None:
-          warning("Could not find chromosome %s according to VCF specification (JSON) file: %s" % (cat_chrom,vcf_file));
+          warning("GWAS catalog has variants on chromosome %s, but could not find this chromosome in your VCF (or JSON) file: %s" % (cat_chrom,vcf_file));
           continue;
       else:
         vcf = vcf_file;
