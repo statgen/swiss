@@ -10,6 +10,9 @@ from multiprocessing import *
 from itertools import *
 import sys
 
+# Worker function for calculating LD buddies and looking for GWAS catalog overlap.
+# This function is executed by multiprocessing pool, and needs to be importable at the top
+# level of the module. Weird python thing.
 def worker_ld_multi(args):
   v = args[0];
   conf = args[1];
@@ -179,75 +182,72 @@ class GWASCatalog:
 
     return missing_rows;
 
-  # Given a variant, find other variants in this catalog in LD with it. 
-  # Uses whichever finder/LD source you choose to provide to calculate LD. 
-  def variants_in_ld(self,assoc,finder,ld_thresh=0.1,dist=1e6):
-    dist = int(dist);
-    variants = assoc.get_snps();
-    trait = assoc.trait;
-
-    ld_catalog = None;
-    failed_ld_variants = [];
-    for v in variants:
-      print "Working on variant %s (%s)" % (v.name,v.chrpos);
-      
-      ld_ok = finder.compute(v.chrpos,v.chrom,v.pos - dist, v.pos + dist,ld_thresh);
-      if ld_ok:
-        ld_snps = {v for v in finder.data.iterkeys()};
-        #cat_rows = self.data[self.data['CHRPOS'].map(lambda x: x in ld_snps)];
-        cat_rows = self.data[self.data['CHRPOS'].isin(ld_snps)];
-
-        cat_rows['ASSOC_MARKER'] = v.name;
-        cat_rows['ASSOC_CHRPOS'] = v.chrpos;
-        
-        if trait is not None:
-          cat_rows['ASSOC_TRAIT'] = trait;
-        else:
-          cat_rows['ASSOC_TRAIT'] = "NA";
-          
-        cat_rows['ASSOC_GWAS_LD'] = [finder.data.get(x)[1] for x in cat_rows['CHRPOS']];
-
-        ld_catalog = pd.concat([ld_catalog,cat_rows]);
-      else:
-        failed_ld_variants.append(v);
-
-        warning("could not calculate LD for variant %s (%s) - you should try a different source of LD information to properly clump these variants." % (v.name,v.chrpos));
-
-    # Change column names to be more descriptive.
-    if ld_catalog is not None:
-      ld_catalog.rename(
-        columns = dict(zip(self.all_cols,map(lambda x: "GWAS_" + x,self.all_cols))),
-        inplace = True
-      );
-
-  #    ld_catalog.rename(columns = {
-  #      'SNP' : 'GWAS_SNP',
-  #      'CHR' : 'GWAS_CHR',
-  #      'POS' : 'GWAS_POS',
-  #      'CHRPOS' : "GWAS_CHRPOS"
-  #    },inplace=True);
-
-      # TODO: clean this up, string literals instead of asking the assoc object what the columns are!
-      # Re-order columns.
-      lead_cols = ['ASSOC_MARKER','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_SNP','GWAS_CHRPOS','ASSOC_GWAS_LD'];
-      all_cols = ld_catalog.columns.tolist();
-      other_cols = filter(lambda x: x not in lead_cols,all_cols);
-      col_order = lead_cols + other_cols;
-      ld_catalog = ld_catalog[col_order];
-
-      # Remove unnecessary columns.
-      ld_catalog = ld_catalog.drop(['GWAS_CHR','GWAS_POS'],axis=1);
-
-    return ld_catalog, failed_ld_variants;
+  # # Given a variant, find other variants in this catalog in LD with it.
+  # # Uses whichever finder/LD source you choose to provide to calculate LD.
+  # def variants_in_ld(self,assoc,finder,ld_thresh=0.1,dist=1e6):
+  #   dist = int(dist);
+  #   variants = assoc.get_snps();
+  #   trait = assoc.trait;
+  #
+  #   ld_catalog = None;
+  #   failed_ld_variants = [];
+  #   for v in variants:
+  #     print "Working on variant %s (%s)" % (v.name,v.chrpos);
+  #
+  #     ld_ok = finder.compute(v.chrpos,v.chrom,v.pos - dist, v.pos + dist,ld_thresh);
+  #     if ld_ok:
+  #       ld_snps = {v for v in finder.data.iterkeys()};
+  #       #cat_rows = self.data[self.data['CHRPOS'].map(lambda x: x in ld_snps)];
+  #       cat_rows = self.data[self.data['CHRPOS'].isin(ld_snps)];
+  #
+  #       cat_rows['ASSOC_MARKER'] = v.name;
+  #       cat_rows['ASSOC_CHRPOS'] = v.chrpos;
+  #
+  #       if trait is not None:
+  #         cat_rows['ASSOC_TRAIT'] = trait;
+  #       else:
+  #         cat_rows['ASSOC_TRAIT'] = "NA";
+  #
+  #       cat_rows['ASSOC_GWAS_LD'] = [finder.data.get(x)[1] for x in cat_rows['CHRPOS']];
+  #
+  #       ld_catalog = pd.concat([ld_catalog,cat_rows]);
+  #     else:
+  #       failed_ld_variants.append(v);
+  #
+  #       warning("could not calculate LD for variant %s (%s) - you should try a different source of LD information to properly clump these variants." % (v.name,v.chrpos));
+  #
+  #   # Change column names to be more descriptive.
+  #   if ld_catalog is not None:
+  #     ld_catalog.rename(
+  #       columns = dict(zip(self.all_cols,map(lambda x: "GWAS_" + x,self.all_cols))),
+  #       inplace = True
+  #     );
+  #
+  # #    ld_catalog.rename(columns = {
+  # #      'SNP' : 'GWAS_SNP',
+  # #      'CHR' : 'GWAS_CHR',
+  # #      'POS' : 'GWAS_POS',
+  # #      'CHRPOS' : "GWAS_CHRPOS"
+  # #    },inplace=True);
+  #
+  #     # TODO: clean this up, string literals instead of asking the assoc object what the columns are!
+  #     # Re-order columns.
+  #     lead_cols = ['ASSOC_MARKER','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_SNP','GWAS_CHRPOS','ASSOC_GWAS_LD'];
+  #     all_cols = ld_catalog.columns.tolist();
+  #     other_cols = filter(lambda x: x not in lead_cols,all_cols);
+  #     col_order = lead_cols + other_cols;
+  #     ld_catalog = ld_catalog[col_order];
+  #
+  #     # Remove unnecessary columns.
+  #     ld_catalog = ld_catalog.drop(['GWAS_CHR','GWAS_POS'],axis=1);
+  #
+  #   return ld_catalog, failed_ld_variants;
 
   # Parallel version of variants_in_ld
   def variants_in_ld_multi(self,assoc,finder,ld_thresh=0.1,dist=1e6,num_threads=2):
     dist = int(dist);
     variants = assoc.get_snps();
     trait = assoc.trait;
-
-    # Pool of workers
-    pool = Pool(num_threads);
 
     # Pack up all of the settings needed for the worker process
     def get_local_settings():
@@ -262,8 +262,18 @@ class GWASCatalog:
 
         yield settings;
 
-    # Block until all of the GWAS catalog lookups per variant have completed
-    results = pool.map(worker_ld_multi,izip(variants,get_local_settings()));
+    # These piece of code exists to prevent creating multiprocesses
+    # if thread count is only 1. Why? Because if we're already running multiprocessed,
+    # like in the case of --multi-assoc, trying to spawn another multiprocess causes a crash.
+    if num_threads > 1:
+      # Pool of workers
+      pool = Pool(num_threads);
+
+      # Block until all of the GWAS catalog lookups per variant have completed
+      results = pool.map(worker_ld_multi,izip(variants,get_local_settings()));
+
+    else:
+      results = map(worker_ld_multi,izip(variants,get_local_settings()));
 
     # Which variants didn't complete OK?
     failed_ld_variants = [];

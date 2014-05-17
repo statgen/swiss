@@ -674,6 +674,11 @@ def main():
       pool = Pool(opts.threads);
       traits = multiassoc_epacts_get_traits(opts.assoc);
 
+      # Set the thread count back to 1. We don't want the other potentially threaded components
+      # to execute threaded (like GWAS catalog lookups.) For some reason you can't have multiprocessing
+      # processes executing within multiprocesses.
+      opts.threads = 1;
+
       print "Found %i traits in multiassoc file.." % len(traits);
 
       for trait in traits:
