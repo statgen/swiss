@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import pandas as pd
-import os
+import os, decimal
 from termcolor import *
 from Variant import *
 from subprocess import Popen,PIPE
@@ -85,7 +85,7 @@ class GWASCatalog:
   #   removes null chromosome and position rows
   #   adds a chrpos column e.g. 23:393919
   def _load(self):
-    self.data = pd.read_table(self.filepath,sep="\t");
+    self.data = pd.read_table(self.filepath,sep="\t",dtype = {self.col_pvalue : decimal.Decimal});
     
     # Remove any entries missing CHR and POS. 
     self.data = self.data[self.data[self.col_pos].notnull()];
