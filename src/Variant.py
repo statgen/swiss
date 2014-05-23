@@ -22,6 +22,56 @@ def unique_by_pos(variant_list):
 
   return final;
 
+# Try to parse an EPACTS ID into components.
+# Returns None if it couldn't be parsed.
+# Otherwise a tuple of:
+# (chrom, pos, ref, alt, extra)
+def parse_epacts(v):
+  split = v.split("_");
+
+  # It should have at least 2 elements (chrom:pos, ref/alt)
+  if len(split) < 2:
+    return None;
+
+  # Split chrom/pos
+  try:
+    chrom, pos = split[0].split(":");
+  except:
+    return None;
+
+  # Position should be numeric
+  try:
+    long(pos);
+  except:
+    return None;
+
+  # Split the alleles
+  try:
+    ref, alt = split[1].split("/");
+  except:
+    return None;
+
+  return [chrom,pos,ref,alt,"_".join(split[2:])];
+
+# Try to identify variant as SNP from EPACTS ID.
+# Returns:
+# -- True if definitely a SNP
+# -- False if definitely not a SNP
+# -- None if can't safely determine
+def is_snp_epacts_heuristic(v):
+  parsed = parse_epacts(v);
+  if parsed is None:
+    return None;
+
+  ref, alt = parsed[2:4];
+
+  if len(ref) > 1:
+    return False;
+  elif len(alt) > 1:
+    return False;
+
+  return True;
+
 class Variant:
   def __init__(self,string=None,pos_callable=None):
     self.name = None;

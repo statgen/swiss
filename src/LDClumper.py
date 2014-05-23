@@ -49,13 +49,26 @@ class LDClumper:
       if i < data.shape[0]:
         top_chr = data[chr_col].iat[i];
         top_pos = data[pos_col].iat[i];
+        top_marker = data[marker_col].iat[i];
       else:
         break;
 
       # Calculate LD for this SNP within the region.
       print "Working on LD clumping variant %s" % data[marker_col].iat[i];
 
-      ld_ok = self.finder.compute("%s:%s" % (top_chr,top_pos),top_chr,top_pos - ld_dist,top_pos + ld_dist,ld_thresh);
+      is_snp = is_snp_epacts_heuristic(top_marker);
+      ld_ok = False;
+      if is_snp is not None:
+        # We were able to parse this variant name as an EPACTS ID.
+        if is_snp:
+          # It's a SNP, we're safe to calculate LD with it.
+          ld_ok = self.finder.compute("%s:%s" % (top_chr,top_pos),top_chr,top_pos - ld_dist,top_pos + ld_dist,ld_thresh);
+        else:
+          warning("skipping LD calculation for non-SNP variant %s at %s" % (top_marker,"%s:%s" % (top_chr,top_pos)));
+      else:
+        # For those variants that aren't EPACTS IDs, we don't know if they're an indel or not.
+        # But we can't do anything about it until a future revision, so for now, they'd better filter indels out. 
+        ld_ok = self.finder.compute("%s:%s" % (top_chr,top_pos),top_chr,top_pos - ld_dist,top_pos + ld_dist,ld_thresh);
 
       # Remove variants in LD with this one. 
       if ld_ok:
@@ -65,7 +78,16 @@ class LDClumper:
         for j in xrange(i+1,data.shape[0]):
           row = data.iloc[j];
           row_chrpos = "%s:%s" % (row[chr_col],row[pos_col]);
+          row_marker = row[marker_col];
           ld_tuple = self.finder.data.get(row_chrpos); # returns (dprime, rsq)
+
+          is_snp = is_snp_epacts_heuristic(row_marker);
+          if is_snp is not None:
+            # We were able to parse this variant name as an EPACTS ID.
+            if is_snp is False:
+              # This variant is definitely not a SNP. Leave it in the list.
+              # We can't properly clump indels or other types of variants.
+              continue;
 
           if ld_tuple is None:
             continue;
@@ -96,7 +118,7 @@ class LDClumper:
         failed_ld_variants.append(failed_variant);
 
         data['failed_clump'].iloc[i] = "fail";
-        print >> sys.stderr, colored("Warning: ",'yellow') + "could not calculate LD for variant %s - you should try a different source of LD information to properly clump these variants." % "%s:%s" % (top_chr,top_pos);
+        print >> sys.stderr, colored("Warning: ",'yellow') + "could not calculate LD for variant %s at %s" % (top_marker,"%s:%s" % (top_chr,top_pos));
 
     data = sort_genome(data,chr_col,pos_col);
     self.assoc.data = data;

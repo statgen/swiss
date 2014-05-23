@@ -25,7 +25,20 @@ def worker_ld_multi(args):
 
   print "Working on finding GWAS catalog overlap for variant %s (%s)" % (v.name,v.chrpos);
 
-  ld_ok = finder.compute(v.chrpos,v.chrom,v.pos - dist, v.pos + dist,ld_thresh);
+  is_snp = is_snp_epacts_heuristic(v.name);
+  ld_ok = False;
+  if is_snp is not None:
+    # We were able to parse this variant name as an EPACTS ID.
+    if is_snp:
+      # It's a SNP, we're safe to calculate LD with it.
+      ld_ok = finder.compute(v.chrpos,v.chrom,v.pos - dist, v.pos + dist,ld_thresh);
+    else:
+      warning("skipping LD calculation for non-SNP variant %s at %s" % (v.name,v.chrpos));
+  else:
+    # For those variants that aren't EPACTS IDs, we don't know if they're an indel or not.
+    # But we can't do anything about it until a future revision, so for now, they'd better filter indels out.
+    ld_ok = finder.compute(v.chrpos,v.chrom,v.pos - dist, v.pos + dist,ld_thresh);
+
   if ld_ok:
     ld_snps = {j for j in finder.data.iterkeys()};
     cat_rows = gwascat[gwascat['CHRPOS'].isin(ld_snps)];
@@ -42,7 +55,7 @@ def worker_ld_multi(args):
 
   else:
     cat_rows = None;
-    warning("could not calculate LD for variant %s (%s) - you should try a different source of LD information to properly clump these variants." % (v.name,v.chrpos));
+    warning("could not calculate LD for variant %s (%s)" % (v.name,v.chrpos));
 
   return cat_rows;
 
