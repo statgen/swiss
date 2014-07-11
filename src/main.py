@@ -22,6 +22,7 @@ import os.path
 import atexit
 import __builtin__
 import codecs
+import shlex
 import traceback
 import pandas as pd
 from optparse import *
@@ -97,7 +98,7 @@ def print_program_header():
   print "|%s|" % str.center(PROG_URL,max_length);
   print_table_line();
 
-def get_settings():
+def get_settings(arg_string=None):
   usage = "swiss [options]";
   parser = VerboseParser(usage=usage);
 
@@ -151,7 +152,10 @@ def get_settings():
   # Misc options
   parser.add_option("-T","--threads",default=1,type="int",help="Number of parallel jobs to run. Only works with --multi-assoc currently.");
 
-  (opts,args) = parser.parse_args();
+  if arg_string is None:
+    (opts,args) = parser.parse_args();
+  else:
+    (opts,args) = parser.parse_args(shlex.split(arg_string));
 
   conf = getConf();
 
@@ -638,10 +642,10 @@ def proc_multi(trait,opts):
     if log_obj is not None:
       log_obj.close();
 
-def main():
+def main(arg_string=None):
   print_program_header();
   print "";
-  (opts,args) = get_settings();
+  (opts,args) = get_settings(arg_string);
 
   # If we're running single threaded, everything will go to the same log file.
   # Otherwise, each thread will create its own log.
@@ -690,6 +694,8 @@ def main():
   else:
     print "Loading trait %s from results file: %s" % (opts.trait,opts.assoc);
     run_process(opts.assoc,opts.trait,opts.out,opts);
+
+  return opts, args;
       
 if __name__ == "__main__":
   main();

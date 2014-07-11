@@ -52,5 +52,24 @@ class VerboseParser(OptionParser):
 
       for line in option.help.split("\n"):
         print fill(line,initial_indent="    ",subsequent_indent="    ",width=console_width);
+      
+      if not option.default == ("NO","DEFAULT"):
+        if option.type == "int":
+          default_value = str(int(option.default));
+        elif option.type in ('long','float'):
+          default_value = "%0.4g" % option.default;
+        elif isinstance(option.default,str):
+          if option.default == "\t":
+            default_value = "tab";
+          elif option.default == " ":
+            default_value = "space";
+          else:
+            default_value = str(option.default);
+        else:
+          default_value = str(option.default);
+
+        default_str = "Default value is: %s" % default_value;
+        print fill(default_str,initial_indent="    ",subsequent_indent="    ",width=console_width);
+
       print "";
 
