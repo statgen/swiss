@@ -666,30 +666,36 @@ def main(arg_string=None):
 
   # Loop over traits if multi assoc file, otherwise just load it and do the single trait.
   if opts.multi_assoc:
-    if opts.threads == 1:
-      print "Running in --multi-assoc mode, loading each trait from assoc file..";
-      for trait, df in multiassoc_epacts_iter(opts.assoc):
-        out = opts.out + ".%s" % trait;
-        run_process(df,trait,out,opts);
+    if opts.trait is not None:
+      out = opts.out + ".%s" % opts.trait;
+      df = multiassoc_epacts_load(opts.assoc,opts.trait);
+      run_process(df,opts.trait,out,opts);
 
     else:
-      print "Starting threaded.. %i threads allowed simultaneously" % opts.threads;
+      if opts.threads == 1:
+        print "Running in --multi-assoc mode, loading each trait from assoc file..";
+        for trait, df in multiassoc_epacts_iter(opts.assoc):
+          out = opts.out + ".%s" % trait;
+          run_process(df,trait,out,opts);
 
-      pool = Pool(opts.threads);
-      traits = multiassoc_epacts_get_traits(opts.assoc);
+      else:
+        print "Starting threaded.. %i threads allowed simultaneously" % opts.threads;
 
-      # Set the thread count back to 1. We don't want the other potentially threaded components
-      # to execute threaded (like GWAS catalog lookups.) For some reason you can't have multiprocessing
-      # processes executing within multiprocesses.
-      opts.threads = 1;
+        pool = Pool(opts.threads);
+        traits = multiassoc_epacts_get_traits(opts.assoc);
 
-      print "Found %i traits in multiassoc file.." % len(traits);
+        # Set the thread count back to 1. We don't want the other potentially threaded components
+        # to execute threaded (like GWAS catalog lookups.) For some reason you can't have multiprocessing
+        # processes executing within multiprocesses.
+        opts.threads = 1;
 
-      for trait in traits:
-        pool.apply_async(proc_multi,(trait,opts));
+        print "Found %i traits in multiassoc file.." % len(traits);
 
-      pool.close();
-      pool.join();
+        for trait in traits:
+          pool.apply_async(proc_multi,(trait,opts));
+
+        pool.close();
+        pool.join();
 
   else:
     print "Loading trait %s from results file: %s" % (opts.trait,opts.assoc);
