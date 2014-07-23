@@ -145,6 +145,7 @@ def get_settings(arg_string=None):
   parser.add_option("--gwas-cat-ld",help="LD threshold for considering a GWAS catalog variant in LD.",default=0.1,type="float");
   parser.add_option("--gwas-cat-dist",help="Distance threshold for considering a GWAS catalog variant 'nearby'.",type="int",default=2.5e5);
   parser.add_option("--include-cols",help="List of columns to merge in from association results (grouped by variant.)",default=None);
+  parser.add_option("--skip-overlap-check",help="Skip the check of whether the GWAS catalog has variants that are not in your --ld-gwas-source.",default=False,action="store_true");
 
   # LD cache
   parser.add_option("--cache",help="Prefix for LD cache.",default="ld_cache");
@@ -479,12 +480,13 @@ def run_process(assoc,trait,outprefix,opts):
   # GWAS catalog.
   gcat = GWASCatalog(opts.gwas_cat_file);
 
-  print "\nIdentifying GWAS catalog variants that do not overlap with your --ld-gwas-source: %s" % opts.ld_gwas_source;
-  missing_vcf = gcat.variants_missing_vcf(opts.ld_gwas_source_file);
-  missing_vcf.sort('PHENO',inplace=True);
-  missing_vcf = sort_genome(missing_vcf,'CHR','POS');
-  print colored('Warning: ','yellow') + "the following variants in the GWAS catalog are not present in your VCF file: ";
-  print missing_vcf["SNP CHR POS PHENO Group".split()].to_string(index=False);
+  if not opts.skip_overlap_check:
+    print "\nIdentifying GWAS catalog variants that do not overlap with your --ld-gwas-source: %s" % opts.ld_gwas_source;
+    missing_vcf = gcat.variants_missing_vcf(opts.ld_gwas_source_file);
+    missing_vcf.sort('PHENO',inplace=True);
+    missing_vcf = sort_genome(missing_vcf,'CHR','POS');
+    print colored('Warning: ','yellow') + "the following variants in the GWAS catalog are not present in your VCF file: ";
+    print missing_vcf["SNP CHR POS PHENO Group".split()].to_string(index=False);
 
   print "\nLoaded %i variants from association results.." % results.data.shape[0];
 
