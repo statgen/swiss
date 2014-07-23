@@ -177,13 +177,13 @@ def chrom2chr(c):
     return 23;
   elif c in ('Y','chrY','chromY'):
     return 24;
-  elif c == 'mito':
+  elif c in ('MT','mito','chrM','chrMT'):
     return 25;
-  elif c == 'XY':
+  elif c in ('XY','chrXY'):
     return 26;
   else:
     try:
-      c = int(c);
+      c = int(float(c));
     except:
       c = None;
 

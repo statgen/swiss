@@ -396,7 +396,12 @@ def multiassoc_epacts_load(result_file,trait):
     raise IOError, "Requested trait %s is not present in %s" % (trait,result_file);
 
   this_trait_cols = [trait + ".P",trait + ".B"];
-  df = pd.read_table(result_file,compression = "gzip" if result_file.endswith(".gz") else None,na_values=["NA","None","."],usecols = intro_cols + this_trait_cols);
+  df = pd.read_table(result_file,
+    compression = "gzip" if result_file.endswith(".gz") else None,
+    na_values=["NA","None","."],
+    usecols = intro_cols + this_trait_cols
+  );
+
   df.rename(columns = {
     trait + ".P" : "PVALUE",
     trait + ".B" : "BETA"

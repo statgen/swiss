@@ -30,6 +30,14 @@ def sort_genome(dframe,chr_col,pos_col):
 
   return dframe;
 
+def fix_chrom(x):
+  try:
+    x = str(int(float(x)));
+  except:
+    x = str(x);
+
+  return x.replace("chr","");
+
 class AssocResults:
   def __init__(self,filepath=None,trait=None,df=None):
     self.filepath = filepath;
@@ -53,14 +61,17 @@ class AssocResults:
       if self.__dict__[col] not in self.data.columns:
         error("column '%s' does not exist in your association results data - please set column names with --snp-col, --pval-col, etc." % self.__dict__[col]);
 
+    # Drop SNPs that do not have chromosome
+    self.data = self.data[self.data[self.chrom_col].notnull()];
+
     # Try to fix chromosome column. 
     # Should just be 1, 2, 3, X, Y and not chr4 or chrX
-    self.data[self.chrom_col] = self.data[self.chrom_col].map(lambda x: str(x).replace("chr",""));
+    self.data[self.chrom_col] = self.data[self.chrom_col].map(fix_chrom);
 
-    # Drop SNPs that do not have chromosome or position. 
-    self.data = self.data[self.data[self.chrom_col].notnull()];
-    
+    # Drop SNPs that do not have a position.
     self.data = self.data[self.data[self.pos_col].notnull()];
+
+    # Position must be an integer or it doesn't make sense.
     self.data[self.pos_col] = self.data[self.pos_col].astype('int');
 
     # Try to insert the trait as a column. 
