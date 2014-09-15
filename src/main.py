@@ -643,9 +643,12 @@ def proc_multi(trait,opts):
     run_process(df,trait,out,opts);
 
   except:
-    print >> sys.stderr, traceback.print_exc();
+    print >> sys.stderr, os.linesep + traceback.format_exc();
 
   finally:
+    #sys.stdout.flush();
+    #sys.stderr.flush();
+
     if log_obj is not None:
       log_obj.close();
 
