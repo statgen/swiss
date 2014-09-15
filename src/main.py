@@ -24,6 +24,7 @@ import __builtin__
 import codecs
 import shlex
 import traceback
+import difflib
 import pandas as pd
 from optparse import *
 from termcolor import *
@@ -51,6 +52,20 @@ if SWISS_DEBUG:
   pd.set_option('chained_assignment','warn');
 else:
   pd.set_option('chained_assignment',None);
+
+def find_likely_file(filepath):
+  orig = os.path.split(filepath)[1];
+  dirp = os.path.dirname(filepath);
+  files = os.listdir(dirp);
+
+  matches = difflib.get_close_matches(orig,files,1,0.95);
+  if len(matches) > 0:
+    return os.path.join(dirp,matches[0]);
+  else:
+    return None;
+
+def show_diff(str1,str2):
+  print "\n".join(difflib.ndiff([str1],[str2]))
 
 class BasePair:
   def __init__(self,bp):
@@ -243,6 +258,15 @@ def get_settings(arg_string=None):
     
   # LD clumping source
   if not os.path.isfile(opts.ld_clump_source):
+    if not conf.LD_SOURCES[opts.build].has_key(opts.ld_clump_source):
+      # They specified something, but it's apparently not a file, and not a key. 
+      # Maybe the file is a typo? 
+      match = find_likely_file(opts.ld_clump_source);
+      if match is not None:
+        print "Couldn't find --ld-clump-source, but a file in the directory was a possible match: ";
+        print show_diff(opts.ld_clump_source,match);
+        sys.exit(1);
+
     opts.ld_clump_source_file = find_relative(conf.LD_SOURCES[opts.build][opts.ld_clump_source]);
 
     if opts.ld_clump_source_file is None:
@@ -252,6 +276,15 @@ def get_settings(arg_string=None):
   
   # GWAS LD lookup source
   if not os.path.isfile(opts.ld_gwas_source):
+    if not conf.LD_SOURCES[opts.build].has_key(opts.ld_gwas_source):
+      # They specified something, but it's apparently not a file, and not a key. 
+      # Maybe the file is a typo? 
+      match = find_likely_file(opts.ld_gwas_source);
+      if match is not None:
+        print "Couldn't find --ld-gwas-source, but a file in the directory was a possible match: ";
+        print show_diff(opts.ld_gwas_source,match);
+        sys.exit(1);
+    
     opts.ld_gwas_source_file = find_relative(conf.LD_SOURCES[opts.build][opts.ld_gwas_source]);
 
     if opts.ld_gwas_source_file is None:
