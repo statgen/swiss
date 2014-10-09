@@ -38,6 +38,8 @@ from GWASCatalog import *
 from itertools import *
 from VerboseParser import *
 from multiprocessing import Pool, cpu_count
+from pprint import pprint
+from textwrap import wrap
 
 PROG_NAME = "Swiss";
 PROG_VERSION = "0.9.1";
@@ -160,7 +162,8 @@ def get_settings(arg_string=None):
   parser.add_option("--gwas-cat-ld",help="LD threshold for considering a GWAS catalog variant in LD.",default=0.1,type="float");
   parser.add_option("--gwas-cat-dist",help="Distance threshold for considering a GWAS catalog variant 'nearby'.",type="int",default=2.5e5);
   parser.add_option("--include-cols",help="List of columns to merge in from association results (grouped by variant.)",default=None);
-  parser.add_option("--skip-overlap-check",help="Skip the check of whether the GWAS catalog has variants that are not in your --ld-gwas-source.",default=False,action="store_true");
+  parser.add_option("--skip-overlap-check",help=SUPPRESS_HELP,default=False,action="store_true");
+  parser.add_option("--do-overlap-check",help="Perform the check of whether the GWAS catalog has variants that are not in your --ld-gwas-source.",default=False,action="store_true");
 
   # LD cache
   parser.add_option("--cache",help="Prefix for LD cache.",default="ld_cache");
@@ -469,6 +472,9 @@ def merge_include_cols_gwas_hits(gwas_hits,results,include_cols,snp_col):
 
   return gwas_hits;
 
+def fprint(str):
+  print str
+
 def run_process(assoc,trait,outprefix,opts):
   if isinstance(assoc,str):
     results = AssocResults(assoc,trait);
@@ -513,13 +519,19 @@ def run_process(assoc,trait,outprefix,opts):
   # GWAS catalog.
   gcat = GWASCatalog(opts.gwas_cat_file);
 
-  if not opts.skip_overlap_check:
+  if opts.do_overlap_check:
     print "\nIdentifying GWAS catalog variants that do not overlap with your --ld-gwas-source: %s" % opts.ld_gwas_source;
     missing_vcf = gcat.variants_missing_vcf(opts.ld_gwas_source_file);
     missing_vcf.sort('PHENO',inplace=True);
     missing_vcf = sort_genome(missing_vcf,'CHR','POS');
     print colored('Warning: ','yellow') + "the following variants in the GWAS catalog are not present in your VCF file: ";
     print missing_vcf["SNP CHR POS PHENO Group".split()].to_string(index=False);
+  else:
+    print ""
+    map(fprint,wrap("Skipping check of whether GWAS catalog variants are missing from your LD source. To enable, "
+                    "use --do-overlap-check. Note this can take a fair amount of time depending on the "
+                    "size of your VCF(s)."
+    ))
 
   print "\nLoaded %i variants from association results.." % results.data.shape[0];
 

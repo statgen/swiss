@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import pandas as pd
+import pysam
 import os, decimal
 from termcolor import *
 from Variant import *
@@ -69,9 +70,9 @@ class GWASCatalog:
     self.col_chr = "CHR";
     self.col_pos = "POS";
     self.col_trait = "PHENO";
-    self.col_trait_group = "Group";
+    self.col_trait_group = "GROUP";
     self.col_pvalue = "P_VALUE";
-    self.build = "hg18";
+    self.build = "hg19";
 
     self.data = None;
     self.all_cols = None;
@@ -148,22 +149,18 @@ class GWASCatalog:
 
   def variants_missing_vcf(self,vcf_file):
     chrpos_catalog = set(self.data['CHRPOS']);
-    
+
     cat_chroms = set([i.split(":")[0] for i in chrpos_catalog]);
-    
+
     vcf_regions = set();
     for cat_chrom in cat_chroms:
-      tabix_regions = set();
-      for v in chrpos_catalog:
-        (chrom,pos) = v.split(":");
-        tabix_str = "%s:%s-%s" % (chrom,pos,pos);
-        tabix_regions.add(tabix_str);
+      print >> sys.stderr, "Checking chromosome %s..." % str(cat_chrom);
 
       if '.json' in vcf_file:
         import json
         with open(vcf_file) as jsin:
           vcf_dict = json.load(jsin);
-        
+
         vcf = vcf_dict.get(cat_chrom);
         if vcf is None:
           warning("GWAS catalog has variants on chromosome %s, but could not find this chromosome in your VCF (or JSON) file: %s" % (cat_chrom,vcf_file));
@@ -171,24 +168,30 @@ class GWASCatalog:
       else:
         vcf = vcf_file;
 
-      cmd = "tabix {vcf} {regions} | cut -f 1-3".format(
-        vcf = vcf,
-        regions = " ".join(tabix_regions)
-      );
+      tabix = pysam.Tabixfile(vcf)
 
-      proc = Popen(cmd,shell=True,stdout=PIPE,stderr=PIPE);
-      (stdout,stderr) = proc.communicate();
+      catalog_regions = set()
+      for v in chrpos_catalog:
+        (chrom,pos) = v.split(":");
 
-      if stderr != '':
-        print colored("Error: ",'red') + "could not execute tabix on VCF file %s, error was:\n %s" % (vcf,stderr);
-        raise Exception;
+        if (chrom,pos) in catalog_regions:
+          continue
+        else:
+          catalog_regions.add((chrom,pos))
 
-      for line in stdout.split("\n"):
-        if line.strip() == '' or line is None:
-          continue;
+        tabix_str = "%s:%s-%s" % (chrom,pos,pos);
 
-        lsplit = line.split();
-        vcf_regions.add("{chrom}:{pos}".format(chrom=lsplit[0],pos=lsplit[1]));
+        try:
+          tbiter = tabix.fetch(tabix_str,parser=None)
+        except:
+          continue
+
+        try:
+          tbiter.next()
+        except:
+          continue
+        else:
+          vcf_regions.add(v)
 
     missing_chrpos = chrpos_catalog.difference(vcf_regions);
     missing_rows = self.data[self.data['CHRPOS'].isin(missing_chrpos)];
