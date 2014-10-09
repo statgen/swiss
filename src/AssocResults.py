@@ -38,6 +38,12 @@ def fix_chrom(x):
 
   return x.replace("chr","");
 
+def get_header(filepath,sep="\t"):
+  with open(filepath) as f:
+    header = f.readline().rstrip().split(sep)
+
+  return header
+
 class AssocResults:
   def __init__(self,filepath=None,trait=None,df=None):
     self.filepath = filepath;
@@ -54,8 +60,16 @@ class AssocResults:
     # Were we passed in a data frame that's already loaded, or a path to one?
     if self.data is None:
       # We don't have an already loaded data frame, so read it in.
+      dtypes = {
+        self.pos_col : pd.np.uint32
+      }
+
+      header = get_header(self.filepath)
+      if self.rsq_col in header:
+        dtypes[self.rsq_col] = pd.np.float32
+
       compr = 'gzip' if is_gzip(self.filepath) else None;
-      self.data = pd.read_table(self.filepath,compression=compr,na_values=["NA","None","."],*args,**kwargs);
+      self.data = pd.read_table(self.filepath,compression=compr,na_values=["NA","None","."],dtype=dtypes,*args,**kwargs);
 
     for col in ('pval_col','marker_col','chrom_col','pos_col'):
       if self.__dict__[col] not in self.data.columns:

@@ -42,8 +42,8 @@ from pprint import pprint
 from textwrap import wrap
 
 PROG_NAME = "Swiss";
-PROG_VERSION = "0.9.1";
-PROG_DATE = "04/22/2014"
+PROG_VERSION = "0.9.2";
+PROG_DATE = "10/09/2014"
 PROG_AUTHOR = "Ryan Welch (welchr@umich.edu)";
 PROG_URL = "https://github.com/welchr/Swiss";
 
@@ -495,18 +495,6 @@ def run_process(assoc,trait,outprefix,opts):
   # If the user specified an arbitrary filter, run it too.
   if opts.filter is not None:
     results.do_filter(opts.filter);
-
-#   # LD finder for clumping
-#   vset = VCFastSettings(opts.ld_clump_source_file,opts.vcfast_path);
-# #  cache_clump = LDRegionCache(vset.createLDCacheKey(),opts.cache + "_clump.db");
-# #  atexit.register(cache_clump.close);
-#   finder_clumping = VCFastFinder(vset,verbose=False,cache=None);
-#
-#   # LD finder for GWAS catalog lookups
-#   vset_gwas = VCFastSettings(opts.ld_gwas_source_file,opts.vcfast_path);
-# #  cache_gwas = LDRegionCache(vset.createLDCacheKey(),opts.cache + "_gwas.db");
-# #  atexit.register(cache_gwas.close);
-#   finder_gwas = VCFastFinder(vset_gwas,verbose=False,cache=None);
 
   # LD finder for clumping
   vset = PyLDSettings(opts.ld_clump_source_file,opts.tabix_path);
