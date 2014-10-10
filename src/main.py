@@ -433,6 +433,7 @@ def multiassoc_epacts_load(result_file,trait):
     raise IOError, "Requested trait %s is not present in %s" % (trait,result_file);
 
   this_trait_cols = [trait + ".P",trait + ".B"];
+
   df = pd.read_table(result_file,
     compression = "gzip" if result_file.endswith(".gz") else None,
     na_values=["NA","None","."],
@@ -477,9 +478,9 @@ def fprint(str):
 
 def run_process(assoc,trait,outprefix,opts):
   if isinstance(assoc,str):
-    results = AssocResults(assoc,trait);
+    results = AssocResults(assoc,trait,pval_thresh=opts.clump_p,rsq_filter=opts.rsq_filter,filter=opts.filter);
   else:
-    results = AssocResults(trait=trait,df=assoc);
+    results = AssocResults(trait=trait,df=assoc,pval_thresh=opts.clump_p,rsq_filter=opts.rsq_filter,filter=opts.filter);
 
   results.marker_col = opts.snp_col;
   results.chrom_col = opts.chrom_col;
@@ -487,14 +488,6 @@ def run_process(assoc,trait,outprefix,opts):
   results.pval_col = opts.pval_col;
   results.rsq_col = opts.rsq_col;
   results.load(sep=opts.delim);
-
-  # Filter results on imputation quality, if requested.
-  if opts.rsq_filter is not None:
-    results.filter_imp_quality(opts.rsq_filter);
-
-  # If the user specified an arbitrary filter, run it too.
-  if opts.filter is not None:
-    results.do_filter(opts.filter);
 
   # LD finder for clumping
   vset = PyLDSettings(opts.ld_clump_source_file,opts.tabix_path);

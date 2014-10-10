@@ -4,6 +4,8 @@ from utils import *
 from bx.intervals.intersection import *
 from Variant import *
 
+LOAD_CHUNKSIZE = 500000
+
 class ChromTree:
   def __init__(self):
     self.chrom = {};
@@ -44,8 +46,41 @@ def get_header(filepath,sep="\t"):
 
   return header
 
+def filter_imp_quality(dframe,rsq_col,threshold=0.3):
+  try:
+    threshold = float(threshold);
+  except:
+    error("Imputation quality threshold is not floatable, got: %s" % str(threshold));
+
+  # RSQ needs to be float in order to threshold it correctly 
+  dframe[self.rsq_col] = dframe[rsq_col].astype("float");
+
+  start = dframe.shape[0];
+  dframe = dframe[(dframe[rsq_col] >= threshold) | dframe[rsq_col].isnull()];
+  end = dframe.shape[0];
+  
+  return dframe, start - end
+
+def do_filter(dframe,filter_expr):
+  start = dframe.shape[0];
+  dframe = dframe.query(filter_expr);
+  end = dframe.shape[0];
+
+  return dframe, start - end
+
 class AssocResults:
-  def __init__(self,filepath=None,trait=None,df=None):
+  def __init__(self,filepath=None,trait=None,df=None,pval_thresh=None,rsq_filter=None,filter=None):
+    """
+    Construct an AssocResults object.
+    :param filepath: Path to a file containing association results
+    :param trait: Associated trait name
+    :param df: Data frame of association results. Filepath will be ignored and the results from this data frame will be used.
+    :param pval_thresh: If specified, will filter results at this p-value threshold
+    :param rsq_filter: Filter on imputation accuracy
+    :param filter: Arbitrary filter based on numexpr syntax. For example, "BETA > 0.5 & AL_FREQ < 0.001"
+    :return: This object
+    """
+
     self.filepath = filepath;
     self.data = df;
     self.trait = trait;
@@ -56,20 +91,52 @@ class AssocResults:
     self.pos_col = "pos";
     self.rsq_col = "RSQ";
 
+    self.pval_thresh = pval_thresh
+    self.rsq_filter = rsq_filter
+    self.filter = filter
+
   def load(self,*args,**kwargs):
-    # Were we passed in a data frame that's already loaded, or a path to one?
+    # If a data frame isn't already loaded, we need to read it from a file.
     if self.data is None:
-      # We don't have an already loaded data frame, so read it in.
+      # Specify data types for loading.
+      # Positions should be fine with a 32-bit int.
       dtypes = {
         self.pos_col : pd.np.uint32
       }
 
+      # Imputation accuracies only require a 32-bit float (maybe even a half float would be fine)
       header = get_header(self.filepath)
       if self.rsq_col in header:
         dtypes[self.rsq_col] = pd.np.float32
 
       compr = 'gzip' if is_gzip(self.filepath) else None;
-      self.data = pd.read_table(self.filepath,compression=compr,na_values=["NA","None","."],dtype=dtypes,*args,**kwargs);
+      df_iter = pd.read_table(self.filepath,compression=compr,na_values=["NA","None","."],iterator=True,chunksize=LOAD_CHUNKSIZE,dtype=dtypes,*args,**kwargs);
+
+      chunks = []
+      for chunk in df_iter:
+        if self.pval_thresh is not None:
+          chunk = chunk[chunk[self.pval_col] < self.pval_thresh]
+
+        if self.rsq_filter is not None:
+          chunk = filter_imp_quality(chunk,self.rsq_col,self.rsq_filter)
+
+        if self.filter is not None:
+          chunk = do_filter(chunk,self.filter)
+
+        chunks.append(chunk)
+
+      self.data = pd.concat(chunks)
+
+    else:
+      # We still need to run our filters, even if a data frame was passed in. 
+      if self.pval_thresh is not None:
+        self.data = self.data[self.data[self.pval_col] < self.pval_thresh]
+
+      if self.rsq_filter is not None:
+        self.data = filter_imp_quality(self.data,self.rsq_col,self.rsq_filter)
+
+      if self.filter is not None:
+        self.data = do_filter(self.data,self.filter)
 
     for col in ('pval_col','marker_col','chrom_col','pos_col'):
       if self.__dict__[col] not in self.data.columns:
@@ -93,28 +160,6 @@ class AssocResults:
       warning("TRAIT column already exists in your association results file, can't put --trait into it!");
     else:
       self.data['TRAIT'] = self.trait;
-
-  def filter_imp_quality(self,threshold=0.3):
-    try:
-      threshold = float(threshold);
-    except:
-      error("Imputation quality threshold is not floatable, got: %s" % str(threshold));
-
-    # RSQ needs to be float in order to threshold it correctly 
-    self.data[self.rsq_col] = self.data[self.rsq_col].astype("float");
-
-    start = self.data.shape[0];
-    self.data = self.data[(self.data[self.rsq_col] >= threshold) | self.data[self.rsq_col].isnull()];
-    end = self.data.shape[0];
-
-    print "Imputation quality filter removed %i variants.." % (start - end);
-
-  def do_filter(self,filter_expr):
-    start = self.data.shape[0];
-    self.data = self.data.query(filter_expr);
-    end = self.data.shape[0];
-
-    print "Filter '%s' removed %i variants.." % (filter_expr,start - end);
 
   def liftover(self,build):
     pass
