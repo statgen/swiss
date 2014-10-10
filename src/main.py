@@ -98,7 +98,7 @@ class Conf(object):
     for k,v in conf_dict.iteritems():
       exec "self.%s = v" % str(k);
 
-def getConf(conf_file=SWISS_CONF):
+def get_conf(conf_file=SWISS_CONF):
   conf_file = find_relative(conf_file);
   conf = Conf(conf_file);
   return conf;
@@ -183,7 +183,7 @@ def get_settings(arg_string=None):
   else:
     (opts,args) = parser.parse_args(shlex.split(arg_string));
 
-  conf = getConf();
+  conf = get_conf();
 
   if opts.threads < 1:
     opts.threads = 1;
@@ -332,7 +332,7 @@ def get_settings(arg_string=None):
   return (opts,args);
 
 def print_gwas():
-  conf = getConf();
+  conf = get_conf();
 
   print "%-10s %-40s" % ("Build","Catalog");
   print "%-10s %-40s" % ("-----","-------");
@@ -340,7 +340,7 @@ def print_gwas():
     print "%-10s %-40s" % (build,",".join(cats.keys()));
 
 def print_ld_sources():
-  conf = getConf();
+  conf = get_conf();
 
   print "%-10s %-40s" % ("Build","LD Sources");
   print "%-10s %-40s" % ("-----","----------");
