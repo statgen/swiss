@@ -55,6 +55,13 @@ if SWISS_DEBUG:
 else:
   pd.set_option('chained_assignment',None);
 
+EPACTS_DTYPES = {
+  "CALLRATE" : pd.np.float32,
+  "MAF" : pd.np.float32,
+  "BEG" : pd.np.float32,
+  "END" : pd.np.float32
+}
+
 def find_likely_file(filepath):
   orig = os.path.split(filepath)[1];
   dirp = os.path.dirname(filepath);
@@ -376,46 +383,63 @@ def get_header(infile,sep="\t"):
 
     return h;
 
-# Helper function to iterate over separate traits from an EPACTS multi assoc file.
-def multiassoc_epacts_iter(result_file):
-  header = get_header(result_file);
+# # Helper function to iterate over separate traits from an EPACTS multi assoc file.
+# def multiassoc_epacts_iter(result_file):
+#   header = get_header(result_file);
+#
+#   #CHROM    BEG    END       MARKER_ID    NS        AC  CALLRATE   GENOCNT      MAF  DHA.P   DHA.B  EstC.P  EstC.B  FAw3.P  FAw3.B  FAw3toFA.P  FAw3toFA.B  FAw6.P  FAw6.B  FAw6toFA.P
+#
+#   trait_ps = filter(lambda x: x.endswith(".P"),header);
+#   trait_betas = filter(lambda x: x.endswith(".B"),header);
+#   trait_cols = trait_ps + trait_betas;
+#   intro_cols = filter(lambda x: x not in trait_cols,header);
+#
+#   # Load first columns, since we'll always use them, along with the first trait column.
+#   # base_trait = first trait to load
+#   base_trait_p = trait_ps[0];
+#   base_trait_b = trait_betas[0];
+#   base_trait = base_trait_p.replace(".P","");
+#   base_cols = intro_cols + [base_trait_p,base_trait_b];
+#
+#   print "\nLoading trait %s from association results file: %s" % (base_trait,result_file);
+#
+#   base_df = pd.read_table(result_file,compression = "gzip" if result_file.endswith(".gz") else None,na_values=["NA","None","."],usecols = base_cols);
+#   base_df.rename(columns = {base_trait_p : "PVALUE",base_trait_b : "BETA"},inplace=True);
+#
+#   yield (base_trait,base_df);
+#
+#   for p in trait_ps[1:]:
+#     trait = p.replace(".P","");
+#     bcol = trait + ".B";
+#
+#     print "\nLoading trait %s from association results file: %s" % (trait,result_file);
+#
+#     df = pd.read_table(result_file,compression = "gzip" if result_file.endswith(".gz") else None,na_values=["NA","None","."],usecols = [p,bcol]);
+#     df.rename(columns = {p : "PVALUE",bcol : "BETA"},inplace=True);
+#
+#     base_df["PVALUE"] = df["PVALUE"];
+#     base_df["BETA"] = df["BETA"];
+#
+#     yield (trait,base_df);
 
-  #CHROM    BEG    END       MARKER_ID    NS        AC  CALLRATE   GENOCNT      MAF  DHA.P   DHA.B  EstC.P  EstC.B  FAw3.P  FAw3.B  FAw3toFA.P  FAw3toFA.B  FAw6.P  FAw6.B  FAw6toFA.P
+def multiassoc_epacts_iter(result_file,trait,pval_thresh=None,rsq_col=None,rsq_filter=None,query=None):
+  header = get_header(result_file)
 
-  trait_ps = filter(lambda x: x.endswith(".P"),header);
-  trait_betas = filter(lambda x: x.endswith(".B"),header);
-  trait_cols = trait_ps + trait_betas;
-  intro_cols = filter(lambda x: x not in trait_cols,header);
+  traits = []
+  for h in header:
+    if h.endswith(".P"):
+      traits.append(h.replace(".P",""))
 
-  # Load first columns, since we'll always use them, along with the first trait column.
-  # base_trait = first trait to load
-  base_trait_p = trait_ps[0];
-  base_trait_b = trait_betas[0];
-  base_trait = base_trait_p.replace(".P","");
-  base_cols = intro_cols + [base_trait_p,base_trait_b];
+  for trait in traits:
+    dframe = multiassoc_epacts_load(result_file,trait,pval_thresh,rsq_col,rsq_filter,query)
+    dframe.rename(columns = {
+      trait + ".P" : "PVALUE",
+      trait + ".B" : "BETA"
+    },inplace=True);
 
-  print "\nLoading trait %s from association results file: %s" % (base_trait,result_file);
+    yield trait, dframe
 
-  base_df = pd.read_table(result_file,compression = "gzip" if result_file.endswith(".gz") else None,na_values=["NA","None","."],usecols = base_cols);
-  base_df.rename(columns = {base_trait_p : "PVALUE",base_trait_b : "BETA"},inplace=True);
-
-  yield (base_trait,base_df);
-
-  for p in trait_ps[1:]:
-    trait = p.replace(".P","");
-    bcol = trait + ".B";
-
-    print "\nLoading trait %s from association results file: %s" % (trait,result_file);
-
-    df = pd.read_table(result_file,compression = "gzip" if result_file.endswith(".gz") else None,na_values=["NA","None","."],usecols = [p,bcol]);
-    df.rename(columns = {p : "PVALUE",bcol : "BETA"},inplace=True);
-
-    base_df["PVALUE"] = df["PVALUE"];
-    base_df["BETA"] = df["BETA"];
-
-    yield (trait,base_df);
-
-def multiassoc_epacts_load(result_file,trait):
+def multiassoc_epacts_load(result_file,trait,pval_thresh=None,rsq_col=None,rsq_filter=None,query=None):
   print "\nLoading trait %s from association results file: %s" % (trait,result_file);
 
   header = get_header(result_file);
@@ -433,12 +457,35 @@ def multiassoc_epacts_load(result_file,trait):
     raise IOError, "Requested trait %s is not present in %s" % (trait,result_file);
 
   this_trait_cols = [trait + ".P",trait + ".B"];
+  pval_col = trait + ".P"
+  beta_col = trait + ".B"
 
-  df = pd.read_table(result_file,
+  dtypes = EPACTS_DTYPES.copy()
+  dtypes[beta_col] = pd.np.float32
+
+  df_iter = pd.read_table(result_file,
     compression = "gzip" if result_file.endswith(".gz") else None,
     na_values=["NA","None","."],
-    usecols = intro_cols + this_trait_cols
+    usecols = intro_cols + this_trait_cols,
+    iterator = True,
+    chunksize = 500000,
+    dtype = dtypes
   );
+
+  chunks = []
+  for chunk in df_iter:
+    if pval_thresh is not None:
+      chunk = chunk[chunk[pval_col] < pval_thresh]
+
+    if rsq_filter is not None:
+      chunk = filter_imp_quality(chunk,rsq_col,rsq_filter)
+
+    if query is not None:
+      chunk = chunk.query(query)
+
+    chunks.append(chunk)
+
+  df = pd.concat(chunks)
 
   df.rename(columns = {
     trait + ".P" : "PVALUE",
@@ -478,9 +525,9 @@ def fprint(str):
 
 def run_process(assoc,trait,outprefix,opts):
   if isinstance(assoc,str):
-    results = AssocResults(assoc,trait,pval_thresh=opts.clump_p,rsq_filter=opts.rsq_filter,filter=opts.filter);
+    results = AssocResults(assoc,trait,pval_thresh=opts.clump_p,rsq_filter=opts.rsq_filter,query=opts.filter);
   else:
-    results = AssocResults(trait=trait,df=assoc,pval_thresh=opts.clump_p,rsq_filter=opts.rsq_filter,filter=opts.filter);
+    results = AssocResults(trait=trait,df=assoc,pval_thresh=opts.clump_p,rsq_filter=opts.rsq_filter,query=opts.filter);
 
   results.marker_col = opts.snp_col;
   results.chrom_col = opts.chrom_col;
@@ -514,7 +561,7 @@ def run_process(assoc,trait,outprefix,opts):
                     "size of your VCF(s)."
     ))
 
-  print "\nLoaded %i variants from association results.." % results.data.shape[0];
+  print "\nLoaded %i variants (after filters) from association results.." % results.data.shape[0];
 
   if opts.ld_clump:
     print "\nLD clumping results..";
@@ -664,7 +711,7 @@ def proc_multi(trait,opts):
     sys.stderr = StreamTee(sys.stderr,log_obj);
 
     # Run process for this trait.
-    df = multiassoc_epacts_load(opts.assoc,trait);
+    df = multiassoc_epacts_load(opts.assoc,trait,opts.clump_p,opts.rsq_col,opts.rsq_filter,opts.filter);
     out = opts.out + ".%s" % trait;
     run_process(df,trait,out,opts);
 
@@ -704,13 +751,13 @@ def main(arg_string=None):
   if opts.multi_assoc:
     if opts.trait is not None:
       out = opts.out + ".%s" % opts.trait;
-      df = multiassoc_epacts_load(opts.assoc,opts.trait);
+      df = multiassoc_epacts_load(opts.assoc,opts.trait,opts.clump_p,opts.rsq_col,opts.rsq_filter,opts.filter);
       run_process(df,opts.trait,out,opts);
 
     else:
       if opts.threads == 1:
         print "Running in --multi-assoc mode, loading each trait from assoc file..";
-        for trait, df in multiassoc_epacts_iter(opts.assoc):
+        for trait, df in multiassoc_epacts_iter(opts.assoc,opts.trait,opts.clump_p,opts.rsq_col,opts.rsq_filter,opts.filter):
           out = opts.out + ".%s" % trait;
           run_process(df,trait,out,opts);
 

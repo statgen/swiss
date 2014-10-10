@@ -53,23 +53,15 @@ def filter_imp_quality(dframe,rsq_col,threshold=0.3):
     error("Imputation quality threshold is not floatable, got: %s" % str(threshold));
 
   # RSQ needs to be float in order to threshold it correctly 
-  dframe[self.rsq_col] = dframe[rsq_col].astype("float");
+  dframe[rsq_col] = dframe[rsq_col].astype("float");
 
-  start = dframe.shape[0];
+  # Filter
   dframe = dframe[(dframe[rsq_col] >= threshold) | dframe[rsq_col].isnull()];
-  end = dframe.shape[0];
-  
-  return dframe, start - end
 
-def do_filter(dframe,filter_expr):
-  start = dframe.shape[0];
-  dframe = dframe.query(filter_expr);
-  end = dframe.shape[0];
-
-  return dframe, start - end
+  return dframe
 
 class AssocResults:
-  def __init__(self,filepath=None,trait=None,df=None,pval_thresh=None,rsq_filter=None,filter=None):
+  def __init__(self,filepath=None,trait=None,df=None,pval_thresh=None,rsq_filter=None,query=None):
     """
     Construct an AssocResults object.
     :param filepath: Path to a file containing association results
@@ -93,7 +85,7 @@ class AssocResults:
 
     self.pval_thresh = pval_thresh
     self.rsq_filter = rsq_filter
-    self.filter = filter
+    self.query = query
 
   def load(self,*args,**kwargs):
     # If a data frame isn't already loaded, we need to read it from a file.
@@ -120,8 +112,8 @@ class AssocResults:
         if self.rsq_filter is not None:
           chunk = filter_imp_quality(chunk,self.rsq_col,self.rsq_filter)
 
-        if self.filter is not None:
-          chunk = do_filter(chunk,self.filter)
+        if self.query is not None:
+          chunk = chunk.query(self.query)
 
         chunks.append(chunk)
 
@@ -135,8 +127,8 @@ class AssocResults:
       if self.rsq_filter is not None:
         self.data = filter_imp_quality(self.data,self.rsq_col,self.rsq_filter)
 
-      if self.filter is not None:
-        self.data = do_filter(self.data,self.filter)
+      if self.query is not None:
+        self.data = self.data.query(self.query)
 
     for col in ('pval_col','marker_col','chrom_col','pos_col'):
       if self.__dict__[col] not in self.data.columns:
