@@ -6,15 +6,20 @@ import os.path as path
 this_dir = path.dirname(path.realpath(sys.argv[0]))
 
 # Push swiss source onto the path
-swiss_dir = path.join(this_dir,"../src")
+swiss_dir = path.join(this_dir,"..")
 sys.path.insert(0,swiss_dir);
 
-# Push the virtualenv onto the path
+# Check that the virtualenv exists
 env_dir = path.join(this_dir,"../env")
 activate_this = path.join(env_dir,'bin/activate_this.py')
+
+if not os.path.isfile(activate_this):
+  sys.exit("Error: no virtualenv found, did you run the bin/setup.py script?")
+
+# Push the virtualenv onto the path
 execfile(activate_this, dict(__file__=activate_this))
 
-from main import main
+from swiss.main import main
 
 main();
 
