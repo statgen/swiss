@@ -1856,6 +1856,9 @@ def after_install(options, home_dir):
     cmd = "%s install -I bx-python" % pip
     subprocess.call(shlex.split(cmd))
 
+    cmd = "%s install -I termcolor" % pip
+    subprocess.call(shlex.split(cmd))
+
 
 
 def convert(s):
