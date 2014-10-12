@@ -1,6 +1,8 @@
 ## Swiss
 
 * [Synopsis](#synopsis)
+* [Requirements](#requirements)
+* [Installation](#installation)
 * [Usage](#usage)
   * [Simple example](#simple-example)
   * [Genome build](#genome-build)
@@ -32,6 +34,27 @@ Swiss supports two main formats:
 
 * A tab-delimited file of association results with the usual columns (CHROM, POS, SNP, PVAL)
 * An EPACTS multi-assoc file containing association p-values across a number of traits
+
+## Requirements
+
+* Python 2.7 (not 3.x)
+* Linux (tested on Ubuntu)
+
+## Download
+
+The latest "binary" downloads are here:
+
+| Version | Date       | Includes data for LD | File                                                        |
+|---------|------------|----------------------|-------------------------------------------------------------|
+| 0.9.2   | 10/12/2014 | Yes                  | http://csg.sph.umich.edu/boehnke/swiss/swiss_0.9.2.tgz      |
+| 0.9.2   | 10/12/2014 | No                   | http://csg.sph.umich.edu/boehnke/swiss/swiss_nold_0.9.2.tgz |
+
+This Github site will always contain the most recent source code, and will usually be slightly ahead of the binary/packaged versions listed above. 
+
+## Installation
+
+* Extract the tarball wherever you'd like
+* Run the bin/setup.py script
 
 ## Usage
 
