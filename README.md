@@ -44,10 +44,10 @@ Swiss supports two main formats:
 
 The latest "binary" downloads are here:
 
-| Version | Date       | Includes data for LD | File                                                        |
-|---------|------------|----------------------|-------------------------------------------------------------|
-| 0.9.2   | 10/12/2014 | Yes                  | http://csg.sph.umich.edu/boehnke/swiss/swiss_0.9.2.tgz      |
-| 0.9.2   | 10/12/2014 | No                   | http://csg.sph.umich.edu/boehnke/swiss/swiss_nold_0.9.2.tgz |
+| Version | Date       | Data for LD          | Size | File                                                        |
+|---------|------------|----------------------|------|-------------------------------------------------------------|
+| 0.9.2   | 10/12/2014 | Yes                  | 3.8G | http://csg.sph.umich.edu/boehnke/swiss/swiss_0.9.2.tgz      |
+| 0.9.2   | 10/12/2014 | No                   | 473K | http://csg.sph.umich.edu/boehnke/swiss/swiss_nold_0.9.2.tgz |
 
 This Github site will always contain the most recent source code, and will usually be slightly ahead of the binary/packaged versions listed above. 
 
