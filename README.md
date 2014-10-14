@@ -20,6 +20,7 @@
   * [Common command-lines used](#common-command-lines-used)
 * [Options](#options)
 * [Limitations](#limitations)
+* [License](#license)
 
 ## Synopsis
 
@@ -514,3 +515,21 @@ The command above will:
 Currently does not support indels (or to be more exact, indels are simply skipped and left alone in your results, and flagged with a **fail**. 
 
 The latest human genome build (hg38) is not supported. 
+
+## License
+
+Copyright (C) 2014 Ryan Welch, The University of Michigan
+
+Swiss is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Swiss is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
