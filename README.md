@@ -40,6 +40,7 @@ Swiss supports two main formats:
 
 * Python 2.7 (not 3.x)
 * Linux (tested on Ubuntu)
+* Tabix (available as a part of SAMtools, http://samtools.sourceforge.net/)
 
 ## Download
 
