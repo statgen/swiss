@@ -137,6 +137,7 @@ def get_settings(arg_string=None):
   parser.add_option("--chrom-col",help="Chromosome column name in results file.",default="CHR");
   parser.add_option("--pos-col",help="Position column name in results file.",default="POS");
   parser.add_option("--rsq-col",help="Imputation quality column name.",default="RSQ");
+  parser.add_option("--trait-col",help="Trait column name. Can be omitted, in which case the value of --trait will be added as a column.",default=None);
 
   # Association result filtering results. 
   parser.add_option("--rsq-filter",help="Remove variants below this imputation quality.",default=None);
@@ -160,7 +161,7 @@ def get_settings(arg_string=None):
   parser.add_option("--list-ld-sources",help="Print a list of available LD sources for each genome build.",default=False,action="store_true");
 
   # GWAS catalog
-  parser.add_option("--gwas-cat",help="GWAS catalog to use.",default="fusion");
+  parser.add_option("--gwas-cat",help="GWAS catalog to use.",default="nhgri");
   parser.add_option("--ld-gwas-source",help="Name of pre-configured LD source or VCF file to use when calculating LD with GWAS variants.",default="GOT2D_2011-11");
   parser.add_option("--list-gwas-cats",action="store_true",default=False,help="Give a listing of all valid GWAS catalogs and their descriptions.");
   parser.add_option("--list-gwas-traits",action="store_true",default=False,help="List all of the available traits in a selected GWAS catalog.");
@@ -321,6 +322,10 @@ def get_settings(arg_string=None):
   out_exists = glob(os.path.join(opts.out,"*"));
   if len(out_exists) > 0:
     error("Output files already exist with this prefix: %s" % opts.out);
+
+  # If they didn't specify a trait, nor a trait column... then we'll just use "NA" for the trait.
+  if opts.trait is None and opts.trait_col is None:
+    opts.trait = "NA"
 
   # If multi-assoc is specified, the column names are already known.
   if opts.multi_assoc:
@@ -534,6 +539,8 @@ def run_process(assoc,trait,outprefix,opts):
   results.pos_col = opts.pos_col;
   results.pval_col = opts.pval_col;
   results.rsq_col = opts.rsq_col;
+  if opts.trait_col is not None:
+    results.trait_col = opts.trait_col;
   results.load(sep=opts.delim);
 
   # LD finder for clumping
@@ -781,7 +788,7 @@ def main(arg_string=None):
         pool.join();
 
   else:
-    print "Loading trait %s from results file: %s" % (opts.trait,opts.assoc);
+    print "Loading results file: %s" % opts.assoc;
     run_process(opts.assoc,opts.trait,opts.out,opts);
 
   return opts, args;

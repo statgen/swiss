@@ -100,6 +100,7 @@ class AssocResults:
     self.chrom_col = "chr";
     self.pos_col = "pos";
     self.rsq_col = "RSQ";
+    self.trait_col = "TRAIT"
 
     self.pval_thresh = pval_thresh
     self.rsq_filter = rsq_filter
@@ -166,10 +167,10 @@ class AssocResults:
     self.data[self.pos_col] = self.data[self.pos_col].astype('int');
 
     # Try to insert the trait as a column. 
-    if 'TRAIT' in self.data.columns:
-      warning("TRAIT column already exists in your association results file, can't put --trait into it!");
+    if self.trait_col in self.data.columns:
+      print "Using trait column %s in association reults file..." % self.trait_col
     else:
-      self.data['TRAIT'] = self.trait;
+      self.data[self.trait_col] = self.trait;
 
   def liftover(self,build):
     pass
@@ -232,10 +233,12 @@ class AssocResults:
     snps = [];
     for row_index, row in self.data.iterrows():
       s = Variant();
+
       s.name = row[self.marker_col];
       s.chrom = row[self.chrom_col];
       s.pos = row[self.pos_col];
       s.chrpos = "%s:%s" % (s.chrom,s.pos);
+      s.traits.append(row[self.trait_col])
 
       snps.append(s);
 

@@ -65,10 +65,14 @@ def worker_ld_multi(args):
     cat_rows['ASSOC_MARKER'] = v.name;
     cat_rows['ASSOC_CHRPOS'] = v.chrpos;
 
-    if trait is not None:
-      cat_rows['ASSOC_TRAIT'] = trait;
+    if len(v.traits) > 0:
+      trait = ",".join(sorted(set(v.traits)))
+    elif assoc.trait is not None:
+      trait = assoc.trait
     else:
-      cat_rows['ASSOC_TRAIT'] = "NA";
+      trait = "NA"
+
+    cat_rows["ASSOC_TRAIT"] = trait
 
     cat_rows['ASSOC_GWAS_LD'] = [finder.data.get(x)[1] for x in cat_rows['CHRPOS']];
 
@@ -343,7 +347,6 @@ class GWASCatalog:
   def variants_nearby(self,assoc,dist=1e5):
     dist = int(dist);
     variants = assoc.get_snps();
-    trait = assoc.trait;
 
     dist_catalog = None;
     for v in variants:
@@ -354,10 +357,14 @@ class GWASCatalog:
       cat_rows['ASSOC_MARKER'] = v.name;
       cat_rows['ASSOC_CHRPOS'] = v.chrpos;
 
-      if trait is not None:
-        cat_rows['ASSOC_TRAIT'] = trait;
+      if len(v.traits) > 0:
+        trait = ",".join(sorted(set(v.traits)))
+      elif assoc.trait is not None:
+        trait = assoc.trait
       else:
-        cat_rows['ASSOC_TRAIT'] = "NA";
+        trait = "NA"
+
+      cat_rows["ASSOC_TRAIT"] = trait
 
       cat_rows['ASSOC_GWAS_DIST'] = abs(cat_rows['POS'] - v.pos);
 

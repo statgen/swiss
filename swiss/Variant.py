@@ -97,6 +97,7 @@ class Variant:
     self.chrom = None;
     self.pos = None;
     self.build = None;
+    self.traits = []
 
     # Reference and alternative alleles. 
     # ref_al should be only 1 allele, e.g. G or GCAT
