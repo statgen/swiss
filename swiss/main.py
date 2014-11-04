@@ -157,12 +157,12 @@ def get_settings(arg_string=None):
   parser.add_option("--clump-dist",help="Distance threshold to use for clumping based on distance.",default=2.5e5,type="int");
 
   # LD source (GoT2D, 1000G, etc.) 
-  parser.add_option("--ld-clump-source",help="Name of pre-configured LD source, or a VCF file from which to compute LD.",default="GOT2D_2011-11");
+  parser.add_option("--ld-clump-source",help="Name of pre-configured LD source, or a VCF file from which to compute LD.",default="1000G_2012-03_EUR");
   parser.add_option("--list-ld-sources",help="Print a list of available LD sources for each genome build.",default=False,action="store_true");
 
   # GWAS catalog
   parser.add_option("--gwas-cat",help="GWAS catalog to use.",default="nhgri");
-  parser.add_option("--ld-gwas-source",help="Name of pre-configured LD source or VCF file to use when calculating LD with GWAS variants.",default="GOT2D_2011-11");
+  parser.add_option("--ld-gwas-source",help="Name of pre-configured LD source or VCF file to use when calculating LD with GWAS variants.",default="1000G_2012-03_EUR");
   parser.add_option("--list-gwas-cats",action="store_true",default=False,help="Give a listing of all valid GWAS catalogs and their descriptions.");
   parser.add_option("--list-gwas-traits",action="store_true",default=False,help="List all of the available traits in a selected GWAS catalog.");
   parser.add_option("--list-gwas-trait-groups",action="store_true",default=False,help="List all of the available groupings of traits in a selected GWAS catalog.");
@@ -316,7 +316,12 @@ def get_settings(arg_string=None):
   elif opts.delim == "whitespace":
     opts.delim = None;
 
-  opts.vcfast_path = find_systematic(conf.VCFAST_PATH);
+  try:
+    opts.vcfast_path = find_systematic(conf.VCFAST_PATH);
+  except:
+    # TODO: if we ever use vcfast again, this will need to be patched
+    pass
+
   opts.tabix_path = find_systematic(conf.TABIX_PATH);
 
   out_exists = glob(os.path.join(opts.out,"*"));
