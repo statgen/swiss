@@ -2,6 +2,7 @@
 
 * [Synopsis](#synopsis)
 * [Requirements](#requirements)
+* [Download](#download)
 * [Installation](#installation)
 * [Usage](#usage)
   * [Simple example](#simple-example)
