@@ -139,7 +139,7 @@ class GWASCatalog:
     return set(self.data[self.col_trait_group]);
 
   def get_trait_group_pairs(self):
-    return [(x[0], sorted(x[1].PHENO.unique())) for x in self.data.groupby("Group")];
+    return [(x[0], sorted(x[1].PHENO.unique())) for x in self.data.groupby("GROUP")];
 
   def num_variants(self):
     return self.data.shape[0];

@@ -565,7 +565,7 @@ def run_process(assoc,trait,outprefix,opts):
     missing_vcf.sort('PHENO',inplace=True);
     missing_vcf = sort_genome(missing_vcf,'CHR','POS');
     print colored('Warning: ','yellow') + "the following variants in the GWAS catalog are not present in your VCF file: ";
-    print missing_vcf["SNP CHR POS PHENO Group".split()].to_string(index=False);
+    print missing_vcf["SNP CHR POS PHENO GROUP".split()].to_string(index=False);
   else:
     print ""
     map(fprint,wrap("Skipping check of whether GWAS catalog variants are missing from your LD source. To enable, "
