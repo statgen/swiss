@@ -348,7 +348,7 @@ The .near-gwas.tab file has ASSOC_GWAS_DIST instead of ASSOC_GWAS_LD, and denote
 swiss --assoc example.multiassoc.epacts.gz --multi-assoc \
 --build hg19 --ld-clump-source /net/snowwhite/home/welchr/projects/FFA/metsim_got2d_exomechip.json \
 --ld-gwas-source /net/snowwhite/home/welchr/projects/FFA/metsim_got2d_exomechip.json \
---gwas-cat fusion --ld-clump --clump-p 5e-08 --out example
+--gwas-cat nhgri --ld-clump --clump-p 5e-08 --out example
 ```
 
 The command above will: 
@@ -356,7 +356,7 @@ The command above will:
 * Run on an EPACTS multiassoc file (and do all traits. To do a single trait, use `--trait`). 
 * Use LD clumping to prune variants, and use VCF files specified by metsim_got2d_exomechip.json to do it
 * Remove any variant with p-value > 5e-08
-* Use the FUSION GWAS catalog (our internal catalog) for looking up GWAS variants in LD with top signals
+* Use the NHGRI GWAS catalog for looking up GWAS variants in LD with top signals
 * Again use the VCFs specified by metsim_got2d_exomechip.json to find GWAS variants in LD with top signals
 
 ---
@@ -365,7 +365,7 @@ The command above will:
 swiss --assoc my_results.tab --delim tab --chrom-col CHROM --pos-col POS --pval-col PVAL --snp-col SNP \
 --rsq-col RSQ --rsq-filter 0.3 \
 --build hg19 --ld-clump-source 1000G_2012-03_EUR --ld-gwas-source 1000G_2012-03_EUR \
---gwas-cat fusion --dist-clump --clump-p 5e-08 --clump-dist 500000 --out example
+--gwas-cat nhgri --dist-clump --clump-p 5e-08 --clump-dist 500000 --out example
 ```
 
 The command above will: 
