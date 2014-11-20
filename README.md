@@ -49,8 +49,8 @@ The latest "binary" downloads are here:
 
 | Version | Date       | Data for LD          | Size | File                                                        |
 |---------|------------|----------------------|------|-------------------------------------------------------------|
-| 0.9.2   | 10/12/2014 | Yes                  | 3.8G | http://csg.sph.umich.edu/boehnke/swiss/swiss_0.9.2.tgz      |
-| 0.9.2   | 10/12/2014 | No                   | 473K | http://csg.sph.umich.edu/boehnke/swiss/swiss_nold_0.9.2.tgz |
+| 0.9.3   | 11/20/2014 | Yes                  | 3.8G | http://csg.sph.umich.edu/boehnke/swiss/swiss_0.9.3.tgz      |
+| 0.9.3   | 11/20/2014 | No                   | 474K | http://csg.sph.umich.edu/boehnke/swiss/swiss_nold_0.9.3.tgz |
 
 This Github site will always contain the most recent source code, and will usually be slightly ahead of the binary/packaged versions listed above. 
 
