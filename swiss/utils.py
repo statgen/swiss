@@ -183,6 +183,7 @@ def chrom2chr(c):
     return 26;
   else:
     try:
+      c = c.replace("chrom","").replace("chr","")
       c = int(float(c));
     except:
       c = None;
