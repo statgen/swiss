@@ -42,8 +42,8 @@ from pprint import pprint
 from textwrap import wrap
 
 PROG_NAME = "Swiss";
-PROG_VERSION = "0.9.3";
-PROG_DATE = "11/20/2014"
+PROG_VERSION = "0.9.4";
+PROG_DATE = "12/04/2014"
 PROG_AUTHOR = "Ryan Welch (welchr@umich.edu)";
 PROG_URL = "https://github.com/welchr/Swiss";
 

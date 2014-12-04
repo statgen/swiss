@@ -3,6 +3,7 @@
 * [Synopsis](#synopsis)
 * [Requirements](#requirements)
 * [Download](#download)
+* [Changes](#changes)
 * [Installation](#installation)
 * [Usage](#usage)
   * [Simple example](#simple-example)
@@ -49,10 +50,17 @@ The latest "binary" downloads are here:
 
 | Version | Date       | Data for LD          | Size | File                                                        |
 |---------|------------|----------------------|------|-------------------------------------------------------------|
-| 0.9.3   | 11/20/2014 | Yes                  | 3.8G | http://csg.sph.umich.edu/boehnke/swiss/swiss_0.9.3.tgz      |
-| 0.9.3   | 11/20/2014 | No                   | 474K | http://csg.sph.umich.edu/boehnke/swiss/swiss_nold_0.9.3.tgz |
+| 0.9.4   | 12/04/2014 | Yes                  | 3.8G | http://csg.sph.umich.edu/boehnke/swiss/swiss_0.9.4.tgz      |
+| 0.9.4   | 12/04/2014 | No                   | 474K | http://csg.sph.umich.edu/boehnke/swiss/swiss_nold_0.9.4.tgz |
 
 This Github site will always contain the most recent source code, and will usually be slightly ahead of the binary/packaged versions listed above. 
+
+## Changes
+
+0.9.4 - 12/4/2014
+
+> Fixes a potential installation issue on Debian where virtualenv would
+> not install pip and setuptools
 
 ## Installation
 
