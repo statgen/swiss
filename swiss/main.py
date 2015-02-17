@@ -58,8 +58,8 @@ else:
 EPACTS_DTYPES = {
   "CALLRATE" : pd.np.float32,
   "MAF" : pd.np.float32,
-  "BEG" : pd.np.float32,
-  "END" : pd.np.float32
+  "BEG" : pd.np.float64,
+  "END" : pd.np.float64
 }
 
 def find_likely_file(filepath):
