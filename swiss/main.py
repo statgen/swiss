@@ -449,8 +449,9 @@ def multiassoc_epacts_iter(result_file,trait,pval_thresh=None,rsq_col=None,rsq_f
 
     yield trait, dframe
 
-def multiassoc_epacts_load(result_file,trait,pval_thresh=None,rsq_col=None,rsq_filter=None,query=None):
-  print "\nLoading trait %s from association results file: %s" % (trait,result_file);
+def multiassoc_epacts_load(result_file,trait,pval_thresh=None,rsq_col=None,rsq_filter=None,query=None,verbose=True):
+  if verbose:
+    print "\nLoading trait %s from association results file: %s" % (trait,result_file);
 
   header = get_header(result_file);
 
