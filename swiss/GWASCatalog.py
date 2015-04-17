@@ -65,12 +65,14 @@ def worker_ld_multi(args):
     cat_rows['ASSOC_MARKER'] = v.name;
     cat_rows['ASSOC_CHRPOS'] = v.chrpos;
 
-    if len(v.traits) > 0:
-      trait = ",".join(sorted(set(v.traits)))
-    elif assoc.trait is not None:
-      trait = assoc.trait
+    vtraits = pd.Series(v.traits).dropna().unique()
+    if len(vtraits) > 0:
+      trait = ",".join(sorted(vtraits))
     else:
-      trait = "NA"
+      if trait is None:
+        trait = "NA"
+
+      # Otherwise, we just use "trait" from conf as above.
 
     cat_rows["ASSOC_TRAIT"] = trait
 
@@ -357,8 +359,9 @@ class GWASCatalog:
       cat_rows['ASSOC_MARKER'] = v.name;
       cat_rows['ASSOC_CHRPOS'] = v.chrpos;
 
-      if len(v.traits) > 0:
-        trait = ",".join(sorted(set(v.traits)))
+      vtraits = pd.Series(v.traits).dropna().unique()
+      if len(vtraits) > 0:
+        trait = ",".join(sorted(vtraits))
       elif assoc.trait is not None:
         trait = assoc.trait
       else:
