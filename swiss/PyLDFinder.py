@@ -525,6 +525,8 @@ class PyLDFinder():
     try:
       data = ld_from_vcf("rsquare",index_pos,vcf,region,min_r2=self.min_r2,tabix_path=self.settings.tabix_path);
     except Exception as e:
+      if SWISS_DEBUG: raise
+
       print >> sys.stderr, e.message;
       self.calc_ok = False;
 
