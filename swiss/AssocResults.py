@@ -18,6 +18,7 @@
 #===============================================================================
 
 import pandas as pd
+import numpy as np
 from utils import *
 from bx.intervals.intersection import *
 from Variant import *
@@ -127,6 +128,8 @@ class AssocResults:
       for chunk in df_iter:
         if self.pval_thresh is not None:
           chunk = chunk[chunk[self.pval_col] < self.pval_thresh]
+        else:
+          chunk[self.pval_col] = np.random.uniform(size=chunk.shape[0])
 
         if self.rsq_filter is not None:
           chunk = filter_imp_quality(chunk,self.rsq_col,self.rsq_filter)
@@ -142,6 +145,11 @@ class AssocResults:
       # We still need to run our filters, even if a data frame was passed in. 
       if self.pval_thresh is not None:
         self.data = self.data[self.data[self.pval_col] < self.pval_thresh]
+      else:
+        # If no p-value threshold was given, it means give each variant a random p-value
+        # to use when pruning (basically, a random SNP within each LD clump will end up getting
+        # selected
+        self.data[self.pval_col] = np.random.uniform(size=self.data.shape[0])
 
       if self.rsq_filter is not None:
         self.data = filter_imp_quality(self.data,self.rsq_col,self.rsq_filter)

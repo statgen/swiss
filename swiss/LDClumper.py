@@ -29,7 +29,7 @@ class LDClumper:
     self.assoc = assoc_results;
     self.finder = finder;
 
-  def ld_clump(self,p_thresh=5e-08,ld_thresh=0.1,ld_dist=1E6):
+  def ld_clump(self,ld_thresh=0.1,ld_dist=1E6):
     data = self.assoc.data;
 
     marker_col = self.assoc.marker_col;
@@ -38,11 +38,6 @@ class LDClumper:
     pos_col = self.assoc.pos_col;
 
     ld_dist = int(ld_dist);
-    
-    # Start by selecting only those variants that are significant. 
-    data = data[data[pval_col] < p_thresh];
-    if data.shape[0] <= 0:
-      return;
 
     # Sort by p-value. 
     data = data.sort(pval_col);

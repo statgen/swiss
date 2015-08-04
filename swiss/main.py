@@ -143,7 +143,7 @@ def get_settings(arg_string=None):
 
   # LD clumping options. 
   parser.add_option("--ld-clump",help="Clump association results by LD.",action="store_true",default=False);
-  parser.add_option("--clump-p",help="P-value threshold for LD and distance based clumping.",default=5e-08,type="float");
+  parser.add_option("--clump-p",help="P-value threshold for LD and distance based clumping.",default=5e-08);
   parser.add_option("--clump-ld-thresh",help="LD threshold for clumping.",default=0.2,type="float");
   parser.add_option("--clump-ld-dist",help="Distance from each significant result to calculate LD.",default=1E6,type="int");
 
@@ -256,9 +256,15 @@ def get_settings(arg_string=None):
     if opts.clump_ld_thresh < 0 or opts.clump_ld_thresh > 1:
       error("LD threshold for clumping must be >= 0 or <= 1.");
 
-  opts.clump_p = float(opts.clump_p);
-  if opts.clump_p < 0 or opts.clump_p > 1:
-    error("P-value threshold must be >= 0 or <= 1.");
+  if opts.clump_p in ("None","NA","NULL",""):
+    opts.clump_p = None
+
+  if opts.clump_p is not None:
+    opts.clump_p = float(opts.clump_p);
+    if opts.clump_p < 0 or opts.clump_p > 1:
+      error("P-value threshold must be >= 0 or <= 1.");
+  else:
+    warning("No p-value threshold was specified! This will result in the best SNP being randomly selected.")
 
   opts.clump_ld_dist = int(float(opts.clump_ld_dist));
 
@@ -584,7 +590,7 @@ def run_process(assoc,trait,outprefix,opts):
     print "\nLD source: %s" % opts.ld_clump_source;
 
     clumper = LDClumper(results,finder_clumping);
-    clump_results = clumper.ld_clump(opts.clump_p,opts.clump_ld_thresh,opts.clump_ld_dist);
+    clump_results = clumper.ld_clump(opts.clump_ld_thresh,opts.clump_ld_dist);
 
     if clump_results is not None:
       results_clumped, failed_ld_clump_variants = clump_results;
