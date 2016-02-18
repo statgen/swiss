@@ -50,12 +50,16 @@ The latest "binary" downloads are here:
 
 | Version | Date       | Data for LD          | Size | File                                                        |
 |---------|------------|----------------------|------|-------------------------------------------------------------|
-| 0.9.4   | 12/04/2014 | Yes                  | 3.8G | http://csg.sph.umich.edu/boehnke/swiss/swiss_0.9.4.tgz      |
-| 0.9.4   | 12/04/2014 | No                   | 474K | http://csg.sph.umich.edu/boehnke/swiss/swiss_nold_0.9.4.tgz |
+| 0.9.5   | 02/18/2016 | Yes                  | 3.8G | http://csg.sph.umich.edu/boehnke/swiss/swiss_0.9.5.tgz      |
+| 0.9.5   | 02/18/2016 | No                   | 2.0M | http://csg.sph.umich.edu/boehnke/swiss/swiss_nold_0.9.5.tgz |
 
 This Github site will always contain the most recent source code, and will usually be slightly ahead of the binary/packaged versions listed above. 
 
 ## Changes
+
+0.9.5 - 02/18/2016
+
+> Update NHGRI GWAS catalog
 
 0.9.4 - 12/4/2014
 
