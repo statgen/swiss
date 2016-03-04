@@ -337,10 +337,6 @@ def get_settings(arg_string=None):
   if len(out_exists) > 0:
     error("Output files already exist with this prefix: %s" % opts.out);
 
-  # If they didn't specify a trait, nor a trait column... then we'll just use "NA" for the trait.
-  if opts.trait is None and opts.trait_col is None:
-    opts.trait = "NA"
-
   # If multi-assoc is specified, the column names are already known.
   if opts.multi_assoc:
     opts.snp_col = "MARKER_ID";
@@ -808,6 +804,9 @@ def main(arg_string=None):
         pool.join();
 
   else:
+    if opts.trait is None and opts.trait_col is None:
+      opts.trait = "NA"
+
     print "Loading results file: %s" % opts.assoc;
     run_process(opts.assoc,opts.trait,opts.out,opts);
 
