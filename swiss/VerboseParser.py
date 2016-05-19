@@ -25,51 +25,51 @@ import sys
 # Slightly modified OptionParser to make the help output look reasonable.
 class VerboseParser(OptionParser):
   def __init__(self,*args,**kwargs):
-    OptionParser.__init__(self,*args,**kwargs);
+    OptionParser.__init__(self,*args,**kwargs)
 
   def print_help(self):
     # Print usage.
-    print "usage: %s" % self.usage;
-    print "";
+    print "usage: %s" % self.usage
+    print ""
 
-    console_width = 120;
+    console_width = 120
     try:
-      console_width = get_terminal_size(120)[0];
+      console_width = get_terminal_size(120)[0]
     except:
       pass
     
     # Print options.
     for option in self.option_list:
       if option.help == "SUPPRESSHELP":
-        continue;
+        continue
 
       if option.type is not None:
         print fill(", ".join(option._short_opts + option._long_opts) + " <%s>" % option.type,\
-          initial_indent="  ",subsequent_indent="  ",width=console_width);
+          initial_indent="  ",subsequent_indent="  ",width=console_width)
       else:
         print fill(", ".join(option._short_opts + option._long_opts),\
-          initial_indent="  ",subsequent_indent="  ",width=console_width);
+          initial_indent="  ",subsequent_indent="  ",width=console_width)
 
       for line in option.help.split("\n"):
-        print fill(line,initial_indent="    ",subsequent_indent="    ",width=console_width);
+        print fill(line,initial_indent="    ",subsequent_indent="    ",width=console_width)
       
       if not option.default == ("NO","DEFAULT"):
         if option.type == "int":
-          default_value = str(int(option.default));
+          default_value = str(int(option.default))
         elif option.type in ('long','float'):
-          default_value = "%0.4g" % option.default;
+          default_value = "%0.4g" % option.default
         elif isinstance(option.default,str):
           if option.default == "\t":
-            default_value = "tab";
+            default_value = "tab"
           elif option.default == " ":
-            default_value = "space";
+            default_value = "space"
           else:
-            default_value = str(option.default);
+            default_value = str(option.default)
         else:
-          default_value = str(option.default);
+          default_value = str(option.default)
 
-        default_str = "Default value is: %s" % default_value;
-        print fill(default_str,initial_indent="    ",subsequent_indent="    ",width=console_width);
+        default_str = "Default value is: %s" % default_value
+        print fill(default_str,initial_indent="    ",subsequent_indent="    ",width=console_width)
 
-      print "";
+      print ""
 
