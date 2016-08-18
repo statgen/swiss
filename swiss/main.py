@@ -189,6 +189,12 @@ def get_settings(arg_string=None):
   else:
     pd.set_option('chained_assignment',None)
 
+  if SWISS_DEBUG:
+    print >> sys.stderr, "Package paths in use: "
+    for x in sys.path:
+      print >> sys.stderr, x
+    print >> sys.stderr, ""
+
   if opts.threads < 1:
     opts.threads = 1
 
