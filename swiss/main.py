@@ -29,7 +29,7 @@ import pandas as pd
 from optparse import *
 from termcolor import *
 from glob import glob
-from utils import *
+from .utils import *
 from VCFastFinder import *
 from PyLDFinder import *
 from LDClumper import *
@@ -600,8 +600,6 @@ def run_process(assoc,trait,outprefix,opts):
       print "\nNo significant variants available for LD clumping, skipping.."
       return
 
-    call_ipdb()
-
     print "\nResults after clumping: "
     print_cols = [
       opts.snp_col,
@@ -617,8 +615,6 @@ def run_process(assoc,trait,outprefix,opts):
 
     print "\nWriting clumped results to: %s" % out_clump
     results_clumped.data.to_csv(out_clump,index=False,sep="\t",na_rep="NA")
-
-    call_ipdb()
 
     if not opts.skip_gwas:
       print "\nFinding clumped results in LD with GWAS catalog variants..."
