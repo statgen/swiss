@@ -133,63 +133,24 @@ def which(f):
 
   return None;
 
-def find_relative(file):
-  full_path = None;
-  
-  # Find the m2zfast root, using the script's location. 
-  start_loc = os.path.realpath(sys.argv[0]);
-  script_dir = None;
-  if os.path.isdir(start_loc):
-    script_dir = start_loc;
-  else:
-    script_dir = os.path.dirname(start_loc);
-  root_dir = os.path.join(script_dir,"../");
-  
-  # If the file to find has a path, it means it is a path relative
-  # to the m2zfast root. We need to attach that path to the root. 
-  (file_path,file_name) = os.path.split(file);
-  if file_path != "":
-    root_dir = os.path.abspath(os.path.join(root_dir,file_path));
-  
-  if file_name == "" or file_name is None:
-    if os.path.exists(root_dir):
-      full_path = root_dir;
-  else:
-    temp_path = os.path.join(root_dir,file_name);
-    if os.path.exists(temp_path):
-      full_path = temp_path;
-  
-  return full_path;
+def find_systematic(fpath):
+  """
+  Tries to find a file in the following order:
+  1) the given file
+  2) on the user's path
+  """
 
-def locate(pattern, root=os.curdir, followlinks=True):
-  '''Locate all files matching supplied filename pattern in and below
-  supplied root directory.'''
-  for path, dirs, files in os.walk(os.path.abspath(root),followlinks=followlinks):
-    for dir in fnmatch.filter(dirs,pattern):
-      yield os.path.join(path,dir);
-    for filename in fnmatch.filter(files, pattern):
-      yield os.path.join(path,filename)
+  if fpath is None:
+    return None
 
-# Tries to find a file in the following order:
-# 1) the given file (duh)
-# 2) relative to m2zfast's root directory
-# 3) on the user's path
-def find_systematic(file):
-  if file is None:
-    return None;
-
-  if os.path.isfile(file):
-    return os.path.abspath(file);
-
-  relative = find_relative(file);
-  if relative:
-    return relative;
+  if os.path.isfile(fpath):
+    return os.path.abspath(fpath)
   
-  whiched_file = which(file);
+  whiched_file = which(fpath)
   if whiched_file is not None:
-    return whiched_file;   
+    return whiched_file
  
-  return None;
+  return None
 
 def is_number(x):
   try:

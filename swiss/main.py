@@ -26,6 +26,7 @@ import shlex
 import traceback
 import difflib
 import pandas as pd
+import appdirs
 from optparse import *
 from termcolor import *
 from glob import glob
@@ -39,14 +40,16 @@ from VerboseParser import *
 from multiprocessing import Pool, cpu_count
 from pprint import pprint
 from textwrap import wrap
+import swiss.conf
+from swiss.conf.reader import read_conf
+from swiss.conf.writer import write_conf
 
 PROG_NAME = "Swiss"
 PROG_VERSION = "1.0.0"
-PROG_DATE = "11/09/2016"
+PROG_DATE = "11/26/2016"
 PROG_AUTHOR = "Ryan Welch (welchr@umich.edu)"
 PROG_URL = "https://github.com/welchr/Swiss"
 
-SWISS_CONF = "conf/swiss.conf"
 __builtin__.SWISS_DEBUG = False
 
 EPACTS_DTYPES = {
@@ -81,21 +84,34 @@ class BasePair:
 
     return "%ikb" % kb
 
-class Conf(object):
-  def __init__(self,conf_file):
-    self._load(conf_file)
+def get_user_config_path():
+  from os import path as p
+  return p.join(appdirs.user_config_dir(),"swiss.yaml")
 
-  def _load(self,file):
-    conf_dict = {}
-    execfile(file,conf_dict)
+def get_conf(fpath=None):
+  from os import path as p
+  conf_file = fpath
 
-    for k,v in conf_dict.iteritems():
-      exec "self.%s = v" % str(k)
+  if fpath is None:
+    # First try in user config dir. 
+    test = get_user_config_path()
+    if p.isfile(test):
+      conf_file = test
 
-def get_conf(conf_file=SWISS_CONF):
-  conf_file = find_relative(conf_file)
-  conf = Conf(conf_file)
-  return conf
+    if conf_file is None:
+      # Okay, wasn't there. Now try loading the default. 
+      default = p.join(swiss.conf.__path__[0],"default.yaml")
+      if p.isfile(default):
+        conf_file = default
+
+  # By now we should have found it. 
+  if conf_file is not None:
+    config = read_conf(conf_file)
+    config["config_path"] = conf_file
+  else:
+    raise IOError("Cannot locate swiss configuration file")
+
+  return config
 
 def print_program_header():
   prog_string = "%s - %s (%s)" % (PROG_NAME,PROG_VERSION,PROG_DATE)
@@ -116,9 +132,43 @@ def print_program_header():
   print "|%s|" % str.center(PROG_URL,max_length)
   print_table_line()
 
+def find_gwas_catalog(conf,build,gwas_cat):
+  import os.path as p
+
+  entry = conf["gwas_catalogs"][build][gwas_cat]
+  if p.isfile(entry):
+    return entry
+  else:
+    # Relative to package install location
+    import swiss
+    default = p.join(swiss.__path__[0],entry)
+    
+    if p.isfile(default):
+      return default
+    else:
+      raise IOError, "Can't find catalog: " + entry
+
+def find_ld_source(conf,build,ld_source):
+  import os.path as p
+
+  entry = conf["ld_sources"][build][ld_source]
+  if p.isfile(entry):
+    return entry
+  else:
+    # Relative to package install location
+    import swiss
+    default = p.join(swiss.__path__[0],entry)
+    
+    if p.isfile(default):
+      return default
+    else:
+      raise IOError, "Can't find LD source: " + entry
+
 def get_settings(arg_string=None):
   usage = "swiss [options]"
   parser = VerboseParser(usage=usage)
+
+  parser.add_option("--list-files",help="Show the locations of files in use by swiss.",default=False,action="store_true")
 
   # Association result input options. 
   parser.add_option("--assoc",help="[Required] Association results file.")
@@ -182,6 +232,12 @@ def get_settings(arg_string=None):
 
   conf = get_conf()
 
+  if opts.list_files:
+    print "Configuration file was found at: " + conf["config_path"]
+    print "The config file can be overridden by copying the default.yaml file to " + get_user_config_path()
+    print "The default swiss data directory is: " + os.path.join(swiss.__path__[0],"data/")
+    sys.exit(0)
+
   if opts.debug:
     __builtin__.SWISS_DEBUG = True
     pd.set_option('chained_assignment','warn')
@@ -205,7 +261,7 @@ def get_settings(arg_string=None):
     sys.exit(0)
 
   if not os.path.isfile(opts.gwas_cat):
-    opts.gwas_cat_file = find_relative(conf.GWAS_CATALOGS[opts.build][opts.gwas_cat])
+    opts.gwas_cat_file = find_gwas_catalog(conf,opts.build,opts.gwas_cat)
 
     if opts.gwas_cat_file is None:
       error("Could not locate GWAS catalog file for conf entry '%s - %s'!" % (opts.build,opts.gwas_cat))
@@ -283,7 +339,7 @@ def get_settings(arg_string=None):
     
   # LD clumping source
   if not os.path.isfile(opts.ld_clump_source):
-    if not conf.LD_SOURCES[opts.build].has_key(opts.ld_clump_source):
+    if not conf["ld_sources"][opts.build].has_key(opts.ld_clump_source):
       # They specified something, but it's apparently not a file, and not a key. 
       # Maybe the file is a typo? 
       match = find_likely_file(opts.ld_clump_source)
@@ -292,7 +348,7 @@ def get_settings(arg_string=None):
         print show_diff(opts.ld_clump_source,match)
         sys.exit(1)
 
-    opts.ld_clump_source_file = find_relative(conf.LD_SOURCES[opts.build][opts.ld_clump_source])
+    opts.ld_clump_source_file = find_ld_source(conf,opts.build,opts.ld_clump_source)
 
     if opts.ld_clump_source_file is None:
       error("Could not locate VCF file for conf entry '%s - %s'!" % (opts.build,opts.ld_clump_source))
@@ -301,7 +357,7 @@ def get_settings(arg_string=None):
   
   # GWAS LD lookup source
   if not os.path.isfile(opts.ld_gwas_source):
-    if not conf.LD_SOURCES[opts.build].has_key(opts.ld_gwas_source):
+    if not conf["ld_sources"][opts.build].has_key(opts.ld_gwas_source):
       # They specified something, but it's apparently not a file, and not a key. 
       # Maybe the file is a typo? 
       match = find_likely_file(opts.ld_gwas_source)
@@ -310,7 +366,7 @@ def get_settings(arg_string=None):
         print show_diff(opts.ld_gwas_source,match)
         sys.exit(1)
     
-    opts.ld_gwas_source_file = find_relative(conf.LD_SOURCES[opts.build][opts.ld_gwas_source])
+    opts.ld_gwas_source_file = find_ld_source(conf,opts.build,opts.ld_gwas_source)
 
     if opts.ld_gwas_source_file is None:
       error("Could not locate VCF file for conf entry '%s - %s'!" % (opts.build,opts.ld_gwas_source))
@@ -331,13 +387,13 @@ def get_settings(arg_string=None):
     opts.delim = None
 
   try:
-    opts.vcfast_path = find_systematic(conf.VCFAST_PATH)
+    opts.vcfast_path = find_systematic(conf["vcfast_path"])
   except:
     # TODO: if we ever use vcfast again, this will need to be patched
     pass
 
-  opts.tabix_path = find_systematic(conf.TABIX_PATH)
-  opts.plink_path = find_systematic(conf.PLINK_PATH)
+  opts.tabix_path = find_systematic(conf["tabix_path"])
+  opts.plink_path = find_systematic(conf["plink_path"])
 
   out_exists = glob(os.path.join(opts.out,"*"))
   if len(out_exists) > 0:
@@ -357,7 +413,7 @@ def print_gwas():
 
   print "%-10s %-40s" % ("Build","Catalog")
   print "%-10s %-40s" % ("-----","-------")
-  for build, cats in conf.GWAS_CATALOGS.iteritems():
+  for build, cats in conf["gwas_catalogs"].iteritems():
     print "%-10s %-40s" % (build,",".join(cats.keys()))
 
 def print_ld_sources():
@@ -365,7 +421,7 @@ def print_ld_sources():
 
   print "%-10s %-40s" % ("Build","LD Sources")
   print "%-10s %-40s" % ("-----","----------")
-  for build, ld_source in conf.LD_SOURCES.iteritems():
+  for build, ld_source in conf["ld_sources"].iteritems():
     ld_source_names = sorted(ld_source)
     print "%-10s %-40s" % (build,", ".join(ld_source_names))
 
