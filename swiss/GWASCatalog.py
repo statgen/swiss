@@ -69,7 +69,7 @@ def worker_ld_multi(args):
 
   else:
     cat_rows = None
-    warning("could not calculate LD for variant %s (%s)" % (v.name,v.chrpos))
+    warning("could not calculate LD for variant %s (%s)" % (v.vid,v.chrpos))
 
   return cat_rows
 

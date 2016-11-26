@@ -233,7 +233,7 @@ class AssocResults:
   # def drop_variants(self,variant_list):
   #   for v in variant_list:
   #     # Drop any variant with the same name (marker ID.)
-  #     self.data = self.data[self.data[self.marker_col] != v.name];
+  #     self.data = self.data[self.data[self.marker_col] != v.vid];
   #
   #     # Drop any variant with the same chrom/pos.
   #     data_chrpos = self.data[self.chrom_col] + ":" + self.data[self.pos_col].map(lambda x: str(int(x)));
@@ -243,7 +243,7 @@ class AssocResults:
   # Keep a list of variants and discard the rest. 
   # Variants are kept if their names directly match, or they are at the same chrom/pos. 
   # def keep_variants(self,variant_list):
-  #   names = [v.name for v in variant_list];
+  #   names = [v.vid for v in variant_list];
   #   chrpos = [v.as_chrpos() for v in variant_list];
   #
   #   data_chrpos = self.data[self.chrom_col] + ":" + self.data[self.pos_col].map(lambda x: str(int(x)));
