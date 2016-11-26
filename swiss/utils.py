@@ -21,6 +21,47 @@ import __builtin__
 import os, sys, decimal, fnmatch, gzip
 from termcolor import colored
 
+def parse_epacts(v,strict=True):
+  """
+  Try to parse an EPACTS ID into components.
+
+  Args:
+    strict (bool): if true, must match an EPACTS ID exactly (chr:pos_ref/alt)
+      If false, then ref/alt can be missing, but at least chr:pos must be specified.
+      In this case, ref/alt will be None in the returned tuple
+
+  Returns:
+    tuple: (chrom, pos, ref, alt, extra)
+  """
+
+  split = v.split("_")
+
+  # Split chrom/pos
+  # This is the minimum required information. If even this isn't present,
+  # it's a bogus ID.
+  try:
+    chrom, pos = split[0].split(":")
+  except:
+    raise ValueError("EPACTS ID had no chrom/pos? " + v)
+
+  # Position should be numeric
+  try:
+    int(pos)
+  except:
+    raise ValueError("Couldn't recognize position {} for variant {}".format(pos,v))
+
+  # Try to split alleles if they were given
+  try:
+    ref, alt = split[1].split("/")
+  except:
+    if strict:
+      raise ValueError("No ref/alt alleles found in EPACTS ID " + v)
+
+    ref = None
+    alt = None
+
+  return [chrom,pos,ref,alt,"_".join(split[2:])]
+
 def call_ipdb():
   import sys
   sys.stdout = sys.__stdout__;

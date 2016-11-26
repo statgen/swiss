@@ -17,9 +17,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===============================================================================
 
+import os, sys
 import pandas as pd
-import pysam
-import os, decimal
+from pysam import VariantFile
 from termcolor import *
 from Variant import *
 from subprocess import Popen,PIPE
@@ -27,7 +27,6 @@ from utils import *
 from copy import deepcopy
 from multiprocessing import *
 from itertools import *
-import sys
 
 # Worker function for calculating LD buddies and looking for GWAS catalog overlap.
 # This function is executed by multiprocessing pool, and needs to be importable at the top
@@ -37,32 +36,22 @@ def worker_ld_multi(args):
   conf = args[1]
 
   finder = conf['finder']
-  dist = conf['dist']
+  ld_dist = conf['dist']
   ld_thresh = conf['ld_thresh']
   trait = conf['trait']
   gwascat = conf['gwascat']
 
-  print "Working on finding GWAS catalog overlap for variant %s (%s)" % (v.name,v.chrpos)
+  print "Working on finding GWAS catalog overlap for variant %s (%s)" % (v.vid,v.epacts)
 
-  is_snp = is_snp_epacts_heuristic(v.name)
-  ld_ok = False
-  if is_snp is not None:
-    # We were able to parse this variant name as an EPACTS ID.
-    if is_snp:
-      # It's a SNP, we're safe to calculate LD with it.
-      ld_ok = finder.compute(v.chrpos,v.chrom,v.pos - dist, v.pos + dist,ld_thresh)
-    else:
-      warning("skipping LD calculation for non-SNP variant %s at %s" % (v.name,v.chrpos))
-  else:
-    # For those variants that aren't EPACTS IDs, we don't know if they're an indel or not.
-    # But we can't do anything about it until a future revision, so for now, they'd better filter indels out.
-    ld_ok = finder.compute(v.chrpos,v.chrom,v.pos - dist, v.pos + dist,ld_thresh)
+  ld_ok = finder.compute(v.epacts,v.chrom,v.pos - ld_dist,v.pos + ld_dist,ld_thresh)
 
   if ld_ok:
     ld_snps = {j for j in finder.data.iterkeys()}
-    cat_rows = gwascat[gwascat['CHRPOS'].isin(ld_snps)]
+    # TODO: fix this, merge won't work on CHRPOS
+    cat_rows = gwascat[gwascat['EPACTS'].isin(ld_snps)]
 
-    cat_rows['ASSOC_MARKER'] = v.name
+    cat_rows['ASSOC_VARIANT'] = v.vid
+    cat_rows['ASSOC_EPACTS'] = v.epacts
     cat_rows['ASSOC_CHRPOS'] = v.chrpos
 
     vtraits = pd.Series(v.traits).dropna().unique()
@@ -76,7 +65,7 @@ def worker_ld_multi(args):
 
     cat_rows["ASSOC_TRAIT"] = trait
 
-    cat_rows['ASSOC_GWAS_LD'] = [finder.data.get(x)[1] for x in cat_rows['CHRPOS']]
+    cat_rows['ASSOC_GWAS_LD'] = [finder.data.get(x)[1] for x in cat_rows['EPACTS']]
 
   else:
     cat_rows = None
@@ -90,49 +79,46 @@ class GWASCatalog:
     if not os.path.isfile(self.filepath):
       raise IOError, "Cannot find file: %s" % self.filepath
 
-    self.col_snp = "SNP"
+    self.col_vid = "VARIANT"
+    self.col_epacts = "EPACTS"
     self.col_chr = "CHR"
     self.col_pos = "POS"
     self.col_trait = "PHENO"
     self.col_trait_group = "GROUP"
-    self.col_pvalue = "P_VALUE"
-    self.build = "hg19"
+    #self.col_pvalue = "P_VALUE"
+    self.col_logpvalue = "LOG_PVAL"
+    self.col_ref = "REF"
+    self.col_alt = "ALT"
 
     self.data = None
     self.all_cols = None
-    self.pos_index = {}
 
     self._load()
 
-  # Load the GWAS catalog specified in self.filepath. 
-  # Assumptions: tab-delimited file
-  # Post-processing: 
-  #   removes null chromosome and position rows
-  #   adds a chrpos column e.g. 23:393919
   def _load(self):
-    self.data = pd.read_table(self.filepath,sep="\t",dtype = {self.col_pvalue : decimal.Decimal})
+    """
+    Load the GWAS catalog specified in self.filepath.
+
+    Assumptions: tab-delimited file
+    Post-processing:
+      removes null chromosome and position rows
+      adds a chrpos column e.g. 23:393919
+
+    Returns:
+
+    """
+
+    self.data = pd.read_table(self.filepath,sep="\t")
     
     # Remove any entries missing CHR and POS. 
     self.data = self.data[self.data[self.col_pos].notnull()]
     self.data = self.data[self.data[self.col_chr].notnull()]
 
-    # Create a chrpos variant column e.g. X:29291
-    self.data['CHRPOS'] = self.data[self.col_chr].map(str) + ":" + self.data[self.col_pos].map(lambda x: str(int(x)))
+    # Remove any variants with missing identifier
+    self.data = self.data[self.data[self.col_epacts].notnull()]
 
     # Save a list of the original columns in this catalog. 
     self.all_cols = [x for x in self.data.columns]
-
-    # Create position index. 
-    self._reindex()
-
-  def _reindex(self):
-    self.pos_index = {}
-
-    # Create position index. 
-    for row_index, row in self.data.iterrows():
-      row_chrom = row[self.col_chr]
-      row_pos = row[self.col_pos]
-      self.pos_index.setdefault((row_chrom,row_pos),[]).append(row_index)
 
   def get_traits(self):
     return set(self.data[self.col_trait])
@@ -144,39 +130,38 @@ class GWASCatalog:
     return [(x[0], sorted(x[1].PHENO.unique())) for x in self.data.groupby("GROUP")]
 
   def num_variants(self):
+    return self.data[self.col_epacts].unique().shape[0]
+
+  def num_rows(self):
     return self.data.shape[0]
 
-  # Return all rows at a given position. 
-  def at_position(self,chrom,pos):
-    indices = self.pos_index.get((chrom,pos))
-    if indices is not None:
-      return self.data.ix[indices]
-    else:
-      return None
-
-  # Return all rows for a particular variant's chrom/pos. 
+  # Return all rows for a particular variant.
   def at_variant(self,variant):
-    return self.at_position(variant.chrom,variant.pos)
+    return self.data[self.data[self.col_epacts] == variant.epacts]
 
   def get_variants(self):
     def row_to_snp(row):
       s = Variant()
-      s.name = row[self.col_snp]
+
+      s.vid = row[self.col_vid]
       s.chrom = row[self.col_chr]
       s.pos = int(row[self.col_pos])
       s.chrpos = "chr%s:%s" % (s.chrom,s.pos)
+      s.ref = row[self.col_ref]
+      s.alt = row[self.col_alt]
+      s.epacts = "{}:{}_{}/{}".format(s.chrom,s.pos,s.ref,s.alt)
+
       return s
 
-    as_snps = self.data.apply(row_to_snp,axis=1)
+    as_variants = self.data.apply(row_to_snp,axis=1)
 
-    return as_snps
+    return as_variants
 
   def variants_missing_vcf(self,vcf_file):
-    chrpos_catalog = set(self.data['CHRPOS'])
+    cat_chroms = set(self.data[self.col_chr].unique())
+    cat_variants = set(self.data[self.col_epacts].unique())
 
-    cat_chroms = set([i.split(":")[0] for i in chrpos_catalog])
-
-    vcf_regions = set()
+    vcf_variants = set()
     for cat_chrom in cat_chroms:
       print >> sys.stderr, "Checking chromosome %s..." % str(cat_chrom)
 
@@ -192,101 +177,32 @@ class GWASCatalog:
       else:
         vcf = vcf_file
 
-      tabix = pysam.Tabixfile(vcf)
+      vcf_pysam = VariantFile(vcf)
 
-      catalog_regions = set()
-      for v in chrpos_catalog:
-        (chrom,pos) = v.split(":")
+      # Subset catalog to chromosome
+      df_cat_for_chrom = self.data.query("{} == '{}'".format(self.col_chr,cat_chrom))
 
-        if (chrom,pos) in catalog_regions:
-          continue
-        else:
-          catalog_regions.add((chrom,pos))
+      # Catalog has repeated rows for variants depending on the number of traits * citations
+      # But we just need each variant once
+      df_cat_for_chrom = df_cat_for_chrom.drop_duplicates(self.col_epacts)
 
-        tabix_str = "%s:%s-%s" % (chrom,pos,pos)
+      # Loop over subsetted catalog, check if variant is in VCF
+      for idx, row in df_cat_for_chrom.iterrows():
+        chrom, pos = row[self.col_chr], row[self.col_pos]
 
-        try:
-          tbiter = tabix.fetch(tabix_str,parser=None)
-        except:
-          continue
+        for rec in vcf_pysam.fetch(chrom,pos,pos):
+          epacts = "{}:{}_{}/{}".format(rec.chrom,rec.pos,rec.ref,rec.alt)
+          vcf_variants.add(epacts)
 
-        try:
-          tbiter.next()
-        except:
-          continue
-        else:
-          vcf_regions.add(v)
-
-    missing_chrpos = chrpos_catalog.difference(vcf_regions)
-    missing_rows = self.data[self.data['CHRPOS'].isin(missing_chrpos)]
+    missing_variants = cat_variants.difference(vcf_variants)
+    missing_rows = self.data[self.data[self.col_epacts].isin(missing_variants)]
 
     return missing_rows
-
-  # # Given a variant, find other variants in this catalog in LD with it.
-  # # Uses whichever finder/LD source you choose to provide to calculate LD.
-  # def variants_in_ld(self,assoc,finder,ld_thresh=0.1,dist=1e6):
-  #   dist = int(dist)
-  #   variants = assoc.get_snps()
-  #   trait = assoc.trait
-  #
-  #   ld_catalog = None
-  #   failed_ld_variants = []
-  #   for v in variants:
-  #     print "Working on variant %s (%s)" % (v.name,v.chrpos)
-  #
-  #     ld_ok = finder.compute(v.chrpos,v.chrom,v.pos - dist, v.pos + dist,ld_thresh)
-  #     if ld_ok:
-  #       ld_snps = {v for v in finder.data.iterkeys()}
-  #       #cat_rows = self.data[self.data['CHRPOS'].map(lambda x: x in ld_snps)]
-  #       cat_rows = self.data[self.data['CHRPOS'].isin(ld_snps)]
-  #
-  #       cat_rows['ASSOC_MARKER'] = v.name
-  #       cat_rows['ASSOC_CHRPOS'] = v.chrpos
-  #
-  #       if trait is not None:
-  #         cat_rows['ASSOC_TRAIT'] = trait
-  #       else:
-  #         cat_rows['ASSOC_TRAIT'] = "NA"
-  #
-  #       cat_rows['ASSOC_GWAS_LD'] = [finder.data.get(x)[1] for x in cat_rows['CHRPOS']]
-  #
-  #       ld_catalog = pd.concat([ld_catalog,cat_rows])
-  #     else:
-  #       failed_ld_variants.append(v)
-  #
-  #       warning("could not calculate LD for variant %s (%s) - you should try a different source of LD information to properly clump these variants." % (v.name,v.chrpos))
-  #
-  #   # Change column names to be more descriptive.
-  #   if ld_catalog is not None:
-  #     ld_catalog.rename(
-  #       columns = dict(zip(self.all_cols,map(lambda x: "GWAS_" + x,self.all_cols))),
-  #       inplace = True
-  #     )
-  #
-  # #    ld_catalog.rename(columns = {
-  # #      'SNP' : 'GWAS_SNP',
-  # #      'CHR' : 'GWAS_CHR',
-  # #      'POS' : 'GWAS_POS',
-  # #      'CHRPOS' : "GWAS_CHRPOS"
-  # #    },inplace=True)
-  #
-  #     # TODO: clean this up, string literals instead of asking the assoc object what the columns are!
-  #     # Re-order columns.
-  #     lead_cols = ['ASSOC_MARKER','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_SNP','GWAS_CHRPOS','ASSOC_GWAS_LD']
-  #     all_cols = ld_catalog.columns.tolist()
-  #     other_cols = filter(lambda x: x not in lead_cols,all_cols)
-  #     col_order = lead_cols + other_cols
-  #     ld_catalog = ld_catalog[col_order]
-  #
-  #     # Remove unnecessary columns.
-  #     ld_catalog = ld_catalog.drop(['GWAS_CHR','GWAS_POS'],axis=1)
-  #
-  #   return ld_catalog, failed_ld_variants
 
   # Parallel version of variants_in_ld
   def variants_in_ld_multi(self,assoc,finder,ld_thresh=0.1,dist=1e6,num_threads=2):
     dist = int(dist)
-    variants = assoc.get_snps()
+    variants = assoc.get_variants()
     trait = assoc.trait
 
     # Pack up all of the settings needed for the worker process
@@ -335,7 +251,7 @@ class GWASCatalog:
 
       # TODO: clean this up, string literals instead of asking the assoc object what the columns are!
       # Re-order columns.
-      lead_cols = ['ASSOC_MARKER','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_SNP','GWAS_CHRPOS','ASSOC_GWAS_LD']
+      lead_cols = ['ASSOC_VARIANT','ASSOC_EPACTS','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_VARIANT','GWAS_EPACTS','GWAS_CHRPOS','ASSOC_GWAS_LD']
       all_cols = ld_catalog.columns.tolist()
       other_cols = filter(lambda x: x not in lead_cols,all_cols)
       col_order = lead_cols + other_cols
@@ -348,15 +264,16 @@ class GWASCatalog:
 
   def variants_nearby(self,assoc,dist=1e5):
     dist = int(dist)
-    variants = assoc.get_snps()
+    variants = assoc.get_variants()
 
     dist_catalog = None
     for v in variants:
       # Could do better with interval tree or indexing, but performance is probably fine here (only 10K rows.)
-      is_near = (self.data['CHR'].map(str) == str(v.chrom)) & (self.data['POS'] > v.pos - dist) & (self.data['POS'] < v.pos + dist)
+      is_near = (self.data[self.col_chr].map(str) == str(v.chrom)) & (self.data[self.col_pos] > v.pos - dist) & (self.data[self.col_pos] < v.pos + dist)
       cat_rows = self.data[is_near]
 
-      cat_rows['ASSOC_MARKER'] = v.name
+      cat_rows['ASSOC_VARIANT'] = v.vid
+      cat_rows['ASSOC_EPACTS'] = v.epacts
       cat_rows['ASSOC_CHRPOS'] = v.chrpos
 
       vtraits = pd.Series(v.traits).dropna().unique()
@@ -369,7 +286,7 @@ class GWASCatalog:
 
       cat_rows["ASSOC_TRAIT"] = trait
 
-      cat_rows['ASSOC_GWAS_DIST'] = abs(cat_rows['POS'] - v.pos)
+      cat_rows['ASSOC_GWAS_DIST'] = abs(cat_rows[self.col_pos] - v.pos)
 
       dist_catalog = pd.concat([dist_catalog,cat_rows])
 
@@ -381,7 +298,7 @@ class GWASCatalog:
       )
 
       # Re-order columns.
-      lead_cols = ['ASSOC_MARKER','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_SNP','GWAS_CHRPOS','ASSOC_GWAS_DIST']
+      lead_cols = ['ASSOC_VARIANT','ASSOC_EPACTS','ASSOC_CHRPOS','ASSOC_TRAIT','GWAS_VARIANT','GWAS_EPACTS','GWAS_CHRPOS','ASSOC_GWAS_DIST']
       all_cols = dist_catalog.columns.tolist()
       other_cols = filter(lambda x: x not in lead_cols,all_cols)
       col_order = lead_cols + other_cols

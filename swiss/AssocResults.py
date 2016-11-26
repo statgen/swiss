@@ -19,7 +19,7 @@
 
 import pandas as pd
 import numpy as np
-from utils import *
+from .utils import *
 from bx.intervals.intersection import *
 from Variant import *
 
@@ -46,7 +46,7 @@ class ChromTree:
 
 def sort_genome(dframe,chr_col,pos_col):
   dframe['int_chr'] = dframe[chr_col].map(chrom2chr);
-  dframe = dframe.sort(['int_chr',pos_col]);
+  dframe = dframe.sort_values(['int_chr',pos_col]);
   del dframe['int_chr'];
 
   return dframe;
@@ -96,20 +96,27 @@ class AssocResults:
     self.data = df;
     self.trait = trait;
 
-    self.pval_col = "P-value";
-    self.marker_col = "MarkerName";
-    self.chrom_col = "chr";
-    self.pos_col = "pos";
-    self.rsq_col = "RSQ";
+    self.pval_col = "P-value"
+    self.vid_col = "MarkerName"
+    self.chrom_col = "chr"
+    self.pos_col = "pos"
+    self.rsq_col = "RSQ"
+    self.ref_col = "REF"
+    self.alt_col = "ALT"
     self.trait_col = "TRAIT"
+    
+    # Internal column generated with EPACTS formatted IDs
+    self.epacts_col = "variant"
 
     self.pval_thresh = pval_thresh
     self.rsq_filter = rsq_filter
     self.query = query
 
   def load(self,*args,**kwargs):
+    data = self.data
+    
     # If a data frame isn't already loaded, we need to read it from a file.
-    if self.data is None:
+    if data is None:
       # Specify data types for loading.
       # Positions should be fine with a 32-bit int.
       dtypes = {
@@ -121,8 +128,7 @@ class AssocResults:
       if self.rsq_col in header:
         dtypes[self.rsq_col] = pd.np.float32
 
-      compr = 'gzip' if is_gzip(self.filepath) else None;
-      df_iter = pd.read_table(self.filepath,compression=compr,na_values=["NA","None","."],iterator=True,chunksize=LOAD_CHUNKSIZE,dtype=dtypes,*args,**kwargs);
+      df_iter = pd.read_table(self.filepath,na_values=["NA","None","."],iterator=True,chunksize=LOAD_CHUNKSIZE,dtype=dtypes,*args,**kwargs);
 
       chunks = []
       for chunk in df_iter:
@@ -139,121 +145,162 @@ class AssocResults:
 
         chunks.append(chunk)
 
-      self.data = pd.concat(chunks)
+      data = pd.concat(chunks)
 
     else:
       # We still need to run our filters, even if a data frame was passed in. 
       if self.pval_thresh is not None:
-        self.data = self.data[self.data[self.pval_col] < self.pval_thresh]
+        data = data[data[self.pval_col] < self.pval_thresh]
       else:
         # If no p-value threshold was given, it means give each variant a random p-value
         # to use when pruning (basically, a random SNP within each LD clump will end up getting
         # selected
-        self.data[self.pval_col] = np.random.uniform(size=self.data.shape[0])
+        data[self.pval_col] = np.random.uniform(size=data.shape[0])
 
       if self.rsq_filter is not None:
-        self.data = filter_imp_quality(self.data,self.rsq_col,self.rsq_filter)
+        data = filter_imp_quality(data,self.rsq_col,self.rsq_filter)
 
       if self.query is not None:
-        self.data = self.data.query(self.query)
+        data = data.query(self.query)
 
-    for col in ('pval_col','marker_col','chrom_col','pos_col'):
-      if self.__dict__[col] not in self.data.columns:
-        error("column '%s' does not exist in your association results data - please set column names with --snp-col, --pval-col, etc." % self.__dict__[col]);
+    for col in ('pval_col','vid_col'):
+      if self.__dict__[col] not in data.columns:
+        error("column '%s' does not exist in your association results data" % self.__dict__[col]);
 
-    # Drop SNPs that do not have chromosome
-    self.data = self.data[self.data[self.chrom_col].notnull()];
+    has_epacts_cols = (self.chrom_col in data) &\
+                      (self.pos_col in data) &\
+                      (self.ref_col in data) &\
+                      (self.alt_col in data)
+    
+    if has_epacts_cols:
+      # If the data file has the needed columns, we can create an EPACTS formatted ID for each variant.
+      data.loc[:, self.epacts_col] = data[self.chrom_col].astype("str").str.replace("chr", "") +\
+                                     ":" + \
+                                     data[self.pos_col].astype("str") +\
+                                     "_" + \
+                                     data[self.ref_col] +\
+                                     "/" + \
+                                     data[self.alt_col]
+    else:
+      # Well, we don't have enough to assemble an EPACTS ID from columns. So we need to construct it from the
+      # marker column, if possible.
+      if self.chrom_col not in data:
+        data[self.chrom_col] = ""
+
+      if self.pos_col not in data:
+        data[self.pos_col] = -1
+
+      data[self.epacts_col] = ""
+
+      for index, row in data.iterrows():
+        variant = data.at[index,self.vid_col]
+        chrom, pos, ref, alt, _ = parse_epacts(variant)
+
+        # If they didn't give us chrom/pos as columns, we need to fill it in.
+        data.at[index,self.chrom_col] = chrom
+        data.at[index,self.pos_col] = pos
+
+        # Insert normalized EPACTS ID (chop off the junk at the very end, if there was any)
+        data.at[index,self.epacts_col] = "{}:{}_{}/{}".format(chrom,pos,ref,alt)
+
+    # Drop variants that do not have chromosome
+    data = data[data[self.chrom_col].notnull()]
 
     # Try to fix chromosome column. 
     # Should just be 1, 2, 3, X, Y and not chr4 or chrX
-    self.data[self.chrom_col] = self.data[self.chrom_col].map(fix_chrom);
+    data[self.chrom_col] = data[self.chrom_col].map(fix_chrom)
 
     # Drop SNPs that do not have a position.
-    self.data = self.data[self.data[self.pos_col].notnull()];
+    data = data[data[self.pos_col].notnull()]
 
     # Position must be an integer or it doesn't make sense.
-    self.data[self.pos_col] = self.data[self.pos_col].astype('int');
+    data[self.pos_col] = data[self.pos_col].astype('int')
 
     # Try to insert the trait as a column. 
-    if self.trait_col in self.data.columns:
+    if self.trait_col in data.columns:
       print "Using trait column %s in association reults file..." % self.trait_col
     else:
-      self.data[self.trait_col] = self.trait;
+      data[self.trait_col] = self.trait
+
+    # Make sure reference is updated
+    self.data = data
 
   def liftover(self,build):
     pass
 
   # Drop a list of variants from the data. 
   # This will remove any variant with the same name OR the same chrom/pos. 
-  def drop_variants(self,variant_list):
-    for v in variant_list:
-      # Drop any variant with the same name (marker ID.) 
-      self.data = self.data[self.data[self.marker_col] != v.name];
-
-      # Drop any variant with the same chrom/pos. 
-      data_chrpos = self.data[self.chrom_col] + ":" + self.data[self.pos_col].map(lambda x: str(int(x)));
-      variant_chrpos = v.as_chrpos();
-      self.data = self.data[data_chrpos != variant_chrpos];
+  # def drop_variants(self,variant_list):
+  #   for v in variant_list:
+  #     # Drop any variant with the same name (marker ID.)
+  #     self.data = self.data[self.data[self.marker_col] != v.name];
+  #
+  #     # Drop any variant with the same chrom/pos.
+  #     data_chrpos = self.data[self.chrom_col] + ":" + self.data[self.pos_col].map(lambda x: str(int(x)));
+  #     variant_chrpos = v.as_chrpos();
+  #     self.data = self.data[data_chrpos != variant_chrpos];
 
   # Keep a list of variants and discard the rest. 
   # Variants are kept if their names directly match, or they are at the same chrom/pos. 
-  def keep_variants(self,variant_list):
-    names = [v.name for v in variant_list];
-    chrpos = [v.as_chrpos() for v in variant_list];
-
-    data_chrpos = self.data[self.chrom_col] + ":" + self.data[self.pos_col].map(lambda x: str(int(x)));
-    
-    name_match = self.data[self.marker_col].isin(names);
-    chrpos_match = data_chrpos.isin(chrpos);
-
-    self.data = self.data[name_match | chrpos_match];
+  # def keep_variants(self,variant_list):
+  #   names = [v.name for v in variant_list];
+  #   chrpos = [v.as_chrpos() for v in variant_list];
+  #
+  #   data_chrpos = self.data[self.chrom_col] + ":" + self.data[self.pos_col].map(lambda x: str(int(x)));
+  #
+  #   name_match = self.data[self.marker_col].isin(names);
+  #   chrpos_match = data_chrpos.isin(chrpos);
+  #
+  #   self.data = self.data[name_match | chrpos_match];
 
   def dist_clump(self,p_thresh=5e-08,dist=50E3):
-    self.data = self.data[self.data[self.pval_col] < p_thresh];
-    self.data = self.data.sort(self.pval_col);
+    # TODO: fix this mess (why return the data re-ordered, and why even subset at all - just use .at and labels instead of .iat)
+    # ...
 
-    self.data['drop_row'] = False;
-    begin_cols = [self.marker_col,self.pval_col,self.chrom_col,self.pos_col,'drop_row'];
-    col_order = begin_cols + list(set(self.data.columns.tolist()).difference(begin_cols));
-    self.data = self.data[col_order];
+    self.data = self.data[self.data[self.pval_col] < p_thresh]
+    self.data = self.data.sort(self.pval_col)
+
+    self.data['drop_row'] = False
+    begin_cols = [self.epacts_col, self.pval_col, self.chrom_col, self.pos_col, 'drop_row']
+    col_order = begin_cols + list(set(self.data.columns.tolist()).difference(begin_cols))
+    self.data = self.data[col_order]
 
     if self.data.shape[0] <= 0:
       return;
 
-    tree = ChromTree();
+    tree = ChromTree()
     for i in xrange(self.data.shape[0]):
-      chrom = self.data.iat[i,2];
-      pos = self.data.iat[i,3];
+      chrom = self.data.iat[i,2]
+      pos = self.data.iat[i,3]
 
       if tree.find_overlap(chrom,pos - dist,pos + dist):
-        self.data.iat[i,4] = True; # drop column
+        self.data.iat[i,4] = True # drop column
       else:
-        tree.add_position(chrom,pos);
+        tree.add_position(chrom,pos)
 
-    final = self.data[self.data.drop_row == False];
-    final = sort_genome(final,self.chrom_col,self.pos_col);
-    del final['drop_row'];
+    final = self.data[self.data.drop_row == False]
+    final = sort_genome(final,self.chrom_col,self.pos_col)
+    del final['drop_row']
 
-    self.data = final;
-    return final;
+    self.data = final
+    return final
 
-  def get_snps(self):
-    snps = [];
+  def get_variants(self):
+    snps = []
     for row_index, row in self.data.iterrows():
-      s = Variant();
+      s = Variant()
 
-      s.name = row[self.marker_col];
-      s.chrom = row[self.chrom_col];
-      s.pos = row[self.pos_col];
-      s.chrpos = "%s:%s" % (s.chrom,s.pos);
+      s.vid = row[self.vid_col]
+      s.epacts = row[self.epacts_col]
+      s.chrom = row[self.chrom_col]
+      s.pos = row[self.pos_col]
+      s.chrpos = "%s:%s" % (s.chrom,s.pos)
+
       s.traits.append(row[self.trait_col])
 
-      snps.append(s);
+      snps.append(s)
 
-    return snps;
+    return snps
 
   def has_rows(self):
-    if self.data.shape[0] <= 0:
-      return False;
-    else:
-      return True;
+    return self.data.shape[0] <= 0

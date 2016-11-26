@@ -17,7 +17,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #===============================================================================
 
-from VCFastFinder import *
 from AssocResults import *
 from utils import *
 from Variant import *
@@ -32,7 +31,7 @@ class LDClumper:
   def ld_clump(self,ld_thresh=0.1,ld_dist=1E6):
     data = self.assoc.data
 
-    marker_col = self.assoc.marker_col
+    variant_col = self.assoc.epacts_col
     pval_col = self.assoc.pval_col
     chr_col = self.assoc.chrom_col
     pos_col = self.assoc.pos_col
@@ -40,10 +39,10 @@ class LDClumper:
     ld_dist = int(ld_dist)
 
     # Sort by p-value. 
-    data = data.sort(pval_col)
+    data = data.sort_values(pval_col)
 
     print "\nStarting with significant %i SNPs:" % int(data.shape[0])
-    print sort_genome(data[[marker_col,pval_col,chr_col,pos_col]],chr_col,pos_col).to_string(index=False)
+    print sort_genome(data[[variant_col,pval_col,chr_col,pos_col]],chr_col,pos_col).to_string(index=False)
     print ""
 
     # Add a column to keep track of which variants were removed due to LD. 
@@ -62,26 +61,14 @@ class LDClumper:
       if i < data.shape[0]:
         top_chr = data[chr_col].iat[i]
         top_pos = data[pos_col].iat[i]
-        top_marker = data[marker_col].iat[i]
+        top_marker = data[variant_col].iat[i]
       else:
         break
 
       # Calculate LD for this SNP within the region.
-      print "Working on LD clumping variant %s" % data[marker_col].iat[i]
+      print "Working on LD clumping variant %s" % top_marker
 
-      is_snp = is_snp_epacts_heuristic(top_marker)
-      ld_ok = False
-      if is_snp is not None:
-        # We were able to parse this variant name as an EPACTS ID.
-        if is_snp:
-          # It's a SNP, we're safe to calculate LD with it.
-          ld_ok = self.finder.compute("%s:%s" % (top_chr,top_pos),top_chr,top_pos - ld_dist,top_pos + ld_dist,ld_thresh)
-        else:
-          warning("skipping LD calculation for non-SNP variant %s at %s" % (top_marker,"%s:%s" % (top_chr,top_pos)))
-      else:
-        # For those variants that aren't EPACTS IDs, we don't know if they're an indel or not.
-        # But we can't do anything about it until a future revision, so for now, they'd better filter indels out. 
-        ld_ok = self.finder.compute("%s:%s" % (top_chr,top_pos),top_chr,top_pos - ld_dist,top_pos + ld_dist,ld_thresh)
+      ld_ok = self.finder.compute(top_marker,top_chr,top_pos - ld_dist,top_pos + ld_dist,ld_thresh)
 
       # Remove variants in LD with this one. 
       if ld_ok:
@@ -90,17 +77,8 @@ class LDClumper:
 
         for j in xrange(i+1,data.shape[0]):
           row = data.iloc[j]
-          row_chrpos = "%s:%s" % (row[chr_col],row[pos_col])
-          row_marker = row[marker_col]
-          ld_tuple = self.finder.data.get(row_chrpos) # returns (dprime, rsq)
-
-          is_snp = is_snp_epacts_heuristic(row_marker)
-          if is_snp is not None:
-            # We were able to parse this variant name as an EPACTS ID.
-            if is_snp is False:
-              # This variant is definitely not a SNP. Leave it in the list.
-              # We can't properly clump indels or other types of variants.
-              continue
+          row_marker = row[variant_col]
+          ld_tuple = self.finder.data.get(row_marker) # returns (dprime, rsq)
 
           if ld_tuple is None:
             continue
@@ -112,7 +90,7 @@ class LDClumper:
             ld_values.append(r2)
 
         # Which variants was the top SNP in LD with?
-        data['ld_with'].iloc[i] = ",".join(data[marker_col][[not x for x in keep]])
+        data['ld_with'].iloc[i] = ",".join(data[variant_col][[not x for x in keep]])
 
         # What were their LD values?
         data['ld_with_values'].iloc[i] = ",".join(map(lambda v: "%0.2f" % v,ld_values))
@@ -124,7 +102,7 @@ class LDClumper:
         data = data[keep]
       else:
         failed_variant = Variant()
-        failed_variant.name = data[marker_col].iat[i]
+        failed_variant.vid = data[variant_col].iat[i]
         failed_variant.chrom = data[chr_col].iat[i]
         failed_variant.pos = data[pos_col].iat[i]
         

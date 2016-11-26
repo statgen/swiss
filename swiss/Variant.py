@@ -18,81 +18,73 @@
 #===============================================================================
 
 import re
+from .utils import parse_epacts
 
-# Filter a list of variants down to only those variants
-# with a unique chr/pos. 
-# Variants without chr/pos are dropped. 
-# Be careful with this and indels! A SNP and an indel
-# can have the same position.  
-def unique_by_pos(variant_list):
-  final = []
-  seen = set()
-  for v in variant_list:
-    if v.chrpos is None:
-      continue
-    
-    has = v.chrpos in seen
-    if has:
-      continue
-    else:
-      seen.add(v.chrpos)
-      final.append(v)
+# def unique_by_pos(variant_list):
+#   """
+#   Filter a list of variants down to only those variants
+#   with a unique chr/pos.
+#
+#   Variants without chr/pos are dropped.
+#
+#   Be careful with this and indels! A SNP and an indel
+#   can have the same position.
+#
+#   Args:
+#     variant_list:
+#
+#   Returns:
+#
+#   """
+#
+#   final = []
+#   seen = set()
+#   for v in variant_list:
+#     if v.chrpos is None:
+#       continue
+#
+#     has = v.chrpos in seen
+#     if has:
+#       continue
+#     else:
+#       seen.add(v.chrpos)
+#       final.append(v)
+#
+#   return final
 
-  return final
-
-# Try to parse an EPACTS ID into components.
-# Returns None if it couldn't be parsed.
-# Otherwise a tuple of:
-# (chrom, pos, ref, alt, extra)
-def parse_epacts(v):
-  split = v.split("_")
-
-  # It should have at least 2 elements (chrom:pos, ref/alt)
-  if len(split) < 2:
-    return None
-
-  # Split chrom/pos
-  try:
-    chrom, pos = split[0].split(":")
-  except:
-    return None
-
-  # Position should be numeric
-  try:
-    long(pos)
-  except:
-    return None
-
-  # Split the alleles
-  try:
-    ref, alt = split[1].split("/")
-  except:
-    return None
-
-  return [chrom,pos,ref,alt,"_".join(split[2:])]
-
-# Try to identify variant as SNP from EPACTS ID.
-# Returns:
-# -- True if definitely a SNP
-# -- False if definitely not a SNP
-# -- None if can't safely determine
-def is_snp_epacts_heuristic(v):
-  parsed = parse_epacts(v)
-  if parsed is None:
-    return None
-
-  ref, alt = parsed[2:4]
-
-  if len(ref) > 1:
-    return False
-  elif len(alt) > 1:
-    return False
-
-  return True
+# def is_snp_epacts_heuristic(v):
+#   """
+#   Try to identify variant as SNP from EPACTS ID.
+#
+#   Returns:
+#   -- True if definitely a SNP
+#   -- False if definitely not a SNP
+#   -- None if can't safely determine
+#
+#   Args:
+#     v:
+#
+#   Returns:
+#
+#   """
+#
+#   parsed = parse_epacts(v,strict=True)
+#   if parsed is None:
+#     return None
+#
+#   ref, alt = parsed[2:4]
+#
+#   if len(ref) > 1:
+#     return False
+#   elif len(alt) > 1:
+#     return False
+#
+#   return True
 
 class Variant:
   def __init__(self,string=None,pos_callable=None):
-    self.name = None
+    self.vid = None
+    self.epacts = None
     self.chrpos = None
     self.chrom = None
     self.pos = None
@@ -102,8 +94,8 @@ class Variant:
     # Reference and alternative alleles. 
     # ref_al should be only 1 allele, e.g. G or GCAT
     # alt_al can be multiple alleles, comma-sep, e.g. T,TCA,TCATAGCTACGATAAT
-    self.ref_al = None
-    self.alt_al = None
+    self.ref = None
+    self.alt = None
 
     self.pos_callable = pos_callable
 
@@ -117,13 +109,13 @@ class Variant:
       self.chrom = res.groups()[0]
       self.pos = int(res.groups()[1])
       self.chrpos = "%s:%s" % (self.chrom,self.pos)
-      self.name = self.chrpos
+      self.vid = self.chrpos
     else:
       raise ValueError, "Invalid chrpos name: %s" % chrpos
 
   # rs914141
   def from_rsid(self,rsid):
-    self.name = rsid
+    self.vid = rsid
 
     if self.pos_callable is not None:
       (chrom,pos) = pos_callable(rsid)
@@ -140,7 +132,7 @@ class Variant:
       self.chrom = res.groups()[0]
       self.pos = int(res.groups()[1])
       self.chrpos = "%s:%s" % (self.chrom,self.pos)
-      self.name = self.chrpos
+      self.vid = self.chrpos
     else:
       raise ValueError, "Cannot parse 'chr-pos' style Variant name: %s" % chrpos
 
@@ -155,15 +147,15 @@ class Variant:
     else:
       # Doesn't seem to have a known format - 
       # maybe this is a weird Variant name like exm-19141?
-      self.rsid = string
+      self.vid = string
 
   # Return this variant as an EPACTS marker ID. 
   def as_epacts(self):
     return "{chrom}:{pos}_{ref}/{alt}".format(
       chrom = self.chrom,
       pos = self.pos,
-      ref = self.ref_al,
-      alt = self.alt_al
+      ref = self.ref,
+      alt = self.alt
     )
 
   def as_chrpos(self):
@@ -173,9 +165,9 @@ class Variant:
     )
   
   def __str__(self):
-    return "%s | %s | %s | %s/%s" % (self.name,self.chrom,self.pos,self.ref_al,self.alt_al)
+    return "%s | %s | %s | %s/%s" % (self.vid, self.chrom, self.pos, self.ref, self.alt)
 
   def __repr__(self):
-    return "%s | %s | %s | %s/%s @ id:%s" % (self.name,self.chrom,self.pos,self.ref_al,self.alt_al,id(self))
+    return "%s | %s | %s | %s/%s @ id:%s" % (self.vid, self.chrom, self.pos, self.ref, self.alt, id(self))
 
 

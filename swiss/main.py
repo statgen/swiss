@@ -30,8 +30,7 @@ from optparse import *
 from termcolor import *
 from glob import glob
 from .utils import *
-from VCFastFinder import *
-from PyLDFinder import *
+from PlinkLDFinder import PlinkLDFinder, PlinkLDSettings
 from LDClumper import *
 from AssocResults import *
 from GWASCatalog import *
@@ -42,8 +41,8 @@ from pprint import pprint
 from textwrap import wrap
 
 PROG_NAME = "Swiss"
-PROG_VERSION = "0.9.5"
-PROG_DATE = "02/18/2016"
+PROG_VERSION = "1.0.0"
+PROG_DATE = "11/09/2016"
 PROG_AUTHOR = "Ryan Welch (welchr@umich.edu)"
 PROG_URL = "https://github.com/welchr/Swiss"
 
@@ -127,8 +126,8 @@ def get_settings(arg_string=None):
   parser.add_option("--trait",help="Description of phenotype for association results file. E.g. 'HDL' or 'T2D'")
   parser.add_option("--delim",help="Association results delimiter.",default="\t")
   parser.add_option("--build",help="Genome build your association results are anchored to.",default="hg19")
-  parser.add_option("--snp-col",help="SNP column name in results file.",default="MarkerName")
-  parser.add_option("--pval-col",help="P-value column name in results file.",default="P-value")
+  parser.add_option("--variant-col",help="Variant column name in results file.",default="MARKER_ID")
+  parser.add_option("--pval-col",help="P-value column name in results file.",default="PVALUE")
   parser.add_option("--chrom-col",help="Chromosome column name in results file.",default="CHR")
   parser.add_option("--pos-col",help="Position column name in results file.",default="POS")
   parser.add_option("--rsq-col",help="Imputation quality column name.",default="RSQ")
@@ -338,6 +337,7 @@ def get_settings(arg_string=None):
     pass
 
   opts.tabix_path = find_systematic(conf.TABIX_PATH)
+  opts.plink_path = find_systematic(conf.PLINK_PATH)
 
   out_exists = glob(os.path.join(opts.out,"*"))
   if len(out_exists) > 0:
@@ -345,7 +345,7 @@ def get_settings(arg_string=None):
 
   # If multi-assoc is specified, the column names are already known.
   if opts.multi_assoc:
-    opts.snp_col = "MARKER_ID"
+    opts.variant_col = "MARKER_ID"
     opts.pval_col = "PVALUE"
     opts.chrom_col = "#CHROM"
     opts.pos_col = "BEG"
@@ -525,20 +525,20 @@ def multiassoc_epacts_get_traits(result_file):
 
   return traits
 
-def merge_include_cols_gwas_hits(gwas_hits,results,include_cols,snp_col):
+def merge_include_cols_gwas_hits(gwas_hits,results,include_cols,variant_col):
   include_cols = [i.strip() for i in include_cols.split(",")]
   include_cols = filter(lambda x: x in results.data.columns,include_cols)
 
   if len(include_cols) == 0:
     print "Warning: user specified --include-cols, but none of them existed in the association results!"
   else:
-    assoc_incl_cols = results.data[[snp_col] + include_cols]
+    assoc_incl_cols = results.data[[variant_col] + include_cols]
     assoc_incl_cols.rename(
       columns = dict(zip(include_cols,map(lambda x: "ASSOC_" + x,include_cols))),
       inplace = True
     )
-    gwas_hits = pd.merge(gwas_hits,assoc_incl_cols,left_on="ASSOC_MARKER",right_on=snp_col)
-    del gwas_hits[snp_col]
+    gwas_hits = pd.merge(gwas_hits,assoc_incl_cols,left_on="ASSOC_VARIANT",right_on=variant_col)
+    del gwas_hits[variant_col]
 
   return gwas_hits
 
@@ -551,7 +551,7 @@ def run_process(assoc,trait,outprefix,opts):
   else:
     results = AssocResults(trait=trait,df=assoc,pval_thresh=opts.clump_p,rsq_filter=opts.rsq_filter,query=opts.filter)
 
-  results.marker_col = opts.snp_col
+  results.vid_col = opts.variant_col
   results.chrom_col = opts.chrom_col
   results.pos_col = opts.pos_col
   results.pval_col = opts.pval_col
@@ -561,12 +561,12 @@ def run_process(assoc,trait,outprefix,opts):
   results.load(sep=opts.delim)
 
   # LD finder for clumping
-  vset = PyLDSettings(opts.ld_clump_source_file,opts.tabix_path)
-  finder_clumping = PyLDFinder(vset,verbose=False,cache=None)
+  vset = PlinkLDSettings(opts.ld_clump_source_file,opts.tabix_path,opts.plink_path)
+  finder_clumping = PlinkLDFinder(vset,verbose=False,cache=None)
 
   # LD finder for GWAS catalog lookups
-  vset_gwas = PyLDSettings(opts.ld_gwas_source_file,opts.tabix_path)
-  finder_gwas = PyLDFinder(vset_gwas,verbose=False,cache=None)
+  vset_gwas = PlinkLDSettings(opts.ld_gwas_source_file,opts.tabix_path,opts.plink_path)
+  finder_gwas = PlinkLDFinder(vset_gwas,verbose=False,cache=None)
 
   # GWAS catalog.
   gcat = GWASCatalog(opts.gwas_cat_file)
@@ -577,7 +577,7 @@ def run_process(assoc,trait,outprefix,opts):
     missing_vcf.sort('PHENO',inplace=True)
     missing_vcf = sort_genome(missing_vcf,'CHR','POS')
     print colored('Warning: ','yellow') + "the following variants in the GWAS catalog are not present in your VCF file: "
-    print missing_vcf["SNP CHR POS PHENO GROUP".split()].to_string(index=False)
+    print missing_vcf["VARIANT EPACTS CHR POS PHENO GROUP".split()].to_string(index=False)
   else:
     print ""
     map(fprint,wrap("Skipping check of whether GWAS catalog variants are missing from your LD source. To enable, "
@@ -602,7 +602,7 @@ def run_process(assoc,trait,outprefix,opts):
 
     print "\nResults after clumping: "
     print_cols = [
-      opts.snp_col,
+      opts.variant_col,
       opts.chrom_col,
       opts.pos_col,
       opts.pval_col,
@@ -624,7 +624,7 @@ def run_process(assoc,trait,outprefix,opts):
       if gwas_ld is not None:
         # If the user requested other columns be merged in with the gwas_ld, pull 'em out.
         if opts.include_cols:
-          gwas_ld = merge_include_cols_gwas_hits(gwas_ld,results_clumped,opts.include_cols,opts.snp_col)
+          gwas_ld = merge_include_cols_gwas_hits(gwas_ld,results_clumped,opts.include_cols,opts.variant_col)
 
         out_ld_gwas = outprefix + ".ld-gwas.tab"
         print "\nWriting GWAS catalog variants in LD with clumped variants to: %s" % out_ld_gwas
@@ -637,7 +637,7 @@ def run_process(assoc,trait,outprefix,opts):
       if gwas_near is not None:
         # If the user requested other association results columns be merged in with the gwas_hits, add them in.
         if opts.include_cols:
-          gwas_near = merge_include_cols_gwas_hits(gwas_near,results_clumped,opts.include_cols,opts.snp_col)
+          gwas_near = merge_include_cols_gwas_hits(gwas_near,results_clumped,opts.include_cols,opts.variant_col)
 
         out_near_gwas = outprefix + ".near-gwas.tab"
         print "Writing GWAS catalog variants within %s of a clumped variant to: %s" % (BasePair(opts.gwas_cat_dist).as_kb(),out_near_gwas)
@@ -654,7 +654,7 @@ def run_process(assoc,trait,outprefix,opts):
 
     print "\nResults after clumping: "
     print_cols = [
-      opts.snp_col,
+      opts.variant_col,
       opts.chrom_col,
       opts.pos_col,
       opts.pval_col,
@@ -674,7 +674,7 @@ def run_process(assoc,trait,outprefix,opts):
       if gwas_ld is not None:
         # If the user requested other association results columns be merged in with the gwas_ld, add them in.
         if opts.include_cols:
-          gwas_ld = merge_include_cols_gwas_hits(gwas_ld,results,opts.include_cols,opts.snp_col)
+          gwas_ld = merge_include_cols_gwas_hits(gwas_ld,results,opts.include_cols,opts.variant_col)
 
         out_ld_gwas = outprefix + ".ld-gwas.tab"
         print "\nWriting GWAS catalog variants in LD with clumped variants to: %s" % out_ld_gwas
@@ -687,7 +687,7 @@ def run_process(assoc,trait,outprefix,opts):
       if gwas_near is not None:
         # If the user requested other association results columns be merged in with the gwas_hits, add them in.
         if opts.include_cols:
-          gwas_near = merge_include_cols_gwas_hits(gwas_near,results,opts.include_cols,opts.snp_col)
+          gwas_near = merge_include_cols_gwas_hits(gwas_near,results,opts.include_cols,opts.variant_col)
 
         out_near_gwas = outprefix + ".near-gwas.tab"
         print "Writing GWAS catalog variants within %s of a clumped variant to: %s" % (BasePair(opts.gwas_cat_dist).as_kb(),out_near_gwas)
@@ -704,7 +704,7 @@ def run_process(assoc,trait,outprefix,opts):
       if gwas_ld is not None:
         # If the user requested other columns be merged in with the gwas_ld, pull 'em out.
         if opts.include_cols:
-          gwas_ld = merge_include_cols_gwas_hits(gwas_ld,results,opts.include_cols,opts.snp_col)
+          gwas_ld = merge_include_cols_gwas_hits(gwas_ld,results,opts.include_cols,opts.variant_col)
 
         print "Found %i GWAS catalog variants in LD with a clumped variant.." % gwas_ld.shape[0]
 
@@ -719,7 +719,7 @@ def run_process(assoc,trait,outprefix,opts):
       if gwas_near is not None:
         # If the user requested other association results columns be merged in with the gwas_hits, add them in.
         if opts.include_cols:
-          gwas_near = merge_include_cols_gwas_hits(gwas_near,results,opts.include_cols,opts.snp_col)
+          gwas_near = merge_include_cols_gwas_hits(gwas_near,results,opts.include_cols,opts.variant_col)
 
         out_near_gwas = outprefix + ".near-gwas.tab"
         print "Writing GWAS catalog variants within %s of a clumped variant to: %s" % (BasePair(opts.gwas_cat_dist).as_kb(),out_near_gwas)
