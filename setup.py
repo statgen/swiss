@@ -5,7 +5,10 @@ import os
 def subfiles(dirpath):
   for d, ds, fs in os.walk(dirpath):
     for f in fs:
-      if f.endswith(".vcf.gz") and not f.startswith("trim"):
+      if f.endswith(".py") or f.endswith(".pyc"):
+        continue
+
+      if ".vcf.gz" in f and not f.startswith("trim"):
         continue
 
       if "fusion" in f:
@@ -20,10 +23,11 @@ setup(
   author_email = "welchr@umich.edu",
 
   # Packages
-  packages = ["swiss"],
+  packages = ["swiss","swiss/conf"],
 
   package_data = {
-    "swiss": [f for f in subfiles("swiss/data")]
+    "swiss": [f for f in subfiles("swiss/data")],
+    "swiss/conf": ["default.yaml"]
   },
 
   # Details
@@ -37,7 +41,8 @@ setup(
     "termcolor",
     "pandas",
     "pysam",
-    "bx-python"
+    "bx-python",
+    "pyyaml"
   ],
 
   scripts = [
