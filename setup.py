@@ -42,7 +42,8 @@ setup(
     "pandas",
     "pysam",
     "bx-python",
-    "pyyaml"
+    "pyyaml",
+    "appdirs"
   ],
 
   scripts = [

@@ -205,7 +205,7 @@ def get_settings(arg_string=None):
   parser.add_option("--list-ld-sources",help="Print a list of available LD sources for each genome build.",default=False,action="store_true")
 
   # GWAS catalog
-  parser.add_option("--gwas-cat",help="GWAS catalog to use.",default="nhgri")
+  parser.add_option("--gwas-cat",help="GWAS catalog to use.",default="ebi")
   parser.add_option("--ld-gwas-source",help="Name of pre-configured LD source or VCF file to use when calculating LD with GWAS variants.",default="1000G_2012-03_EUR")
   parser.add_option("--list-gwas-cats",action="store_true",default=False,help="Give a listing of all valid GWAS catalogs and their descriptions.")
   parser.add_option("--list-gwas-traits",action="store_true",default=False,help="List all of the available traits in a selected GWAS catalog.")
