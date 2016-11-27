@@ -2,8 +2,11 @@ from distutils.core import setup
 from glob import glob
 import os
 
-def subfiles(dirpath):
+def datafiles(dirpath):
   for d, ds, fs in os.walk(dirpath):
+    if "genome" in d:
+      continue
+
     for f in fs:
       if f.endswith(".py") or f.endswith(".pyc"):
         continue
@@ -12,6 +15,9 @@ def subfiles(dirpath):
         continue
 
       if "fusion" in f:
+        continue
+
+      if "got2d" in f.lower():
         continue
 
       yield os.path.join(d,f).replace("swiss/","")
@@ -26,7 +32,7 @@ setup(
   packages = ["swiss","swiss/conf"],
 
   package_data = {
-    "swiss": [f for f in subfiles("swiss/data")],
+    "swiss": [f for f in datafiles("swiss/data")],
     "swiss/conf": ["default.yaml"]
   },
 

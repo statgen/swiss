@@ -43,19 +43,48 @@ Swiss supports two main formats:
 * Python 2.7 (not 3.x)
 * Linux (tested on Ubuntu)
 * Tabix (available as a part of SAMtools, http://samtools.sourceforge.net/)
+* PLINK 1.9 or greater (https://www.cog-genomics.org/plink2)
 
 ## Download
 
-The latest "binary" downloads are here:
+The latest package tarballs are here:
 
 | Version | Date       | Data for LD          | Size | File                                                        |
 |---------|------------|----------------------|------|-------------------------------------------------------------|
-| 0.9.5   | 02/18/2016 | Yes                  | 3.8G | http://csg.sph.umich.edu/boehnke/swiss/swiss_0.9.5.tgz      |
-| 0.9.5   | 02/18/2016 | No                   | 2.0M | http://csg.sph.umich.edu/boehnke/swiss/swiss_nold_0.9.5.tgz |
+| 1.0.0   | 11/27/2016 | Yes                  |      | <>
 
 This Github site will always contain the most recent source code, and will usually be slightly ahead of the binary/packaged versions listed above. 
 
 ## Changes
+
+1.0.0 - 11/27/2016
+
+**This version has backwards incompatible changes with the previous 0.x
+releases.**
+
+New features: 
+
+> Support for indel and other types of variants
+> --list-files will now show the current config file and data files in
+> use
+
+Backwards incompatible changes: 
+
+> Swiss is installed now as a python package, instead of a standalone
+> directory. Some files have shifted around in locations. Use
+> --list-files to find installed locations. 
+> Config file is no longer stored relative to the swiss root directory,
+> but rather within the package directory (see above.) To override, you
+> can copy the default config file to ~/.config/swiss.yaml and modify
+> it. 
+> Option --snp-col is now --variant-col. The default is "MARKER_ID". 
+> Variants in your association results file must contain both ref and
+> alt alleles. This needs to be specified either 1) in the variant
+> column, as EPACTS style IDs (chr:pos_ref/alt), or 2) there must be
+> CHR, POS, REF, and ALT columns in the file.  
+> The default GWAS catalog has been renamed from nhgri to ebi. Use
+> --gwas-cat ebi to specify this catalog. It is currently only available
+> for hg19/GRCh37, but the hg38 version will be generated soon. 
 
 0.9.5 - 02/18/2016
 
@@ -91,13 +120,12 @@ Additionally, if you specify your own GWAS catalog, or VCF files for calculating
 
 The simplest format looks like your typical association results: 
 
-| CHROM | POS | SNP       | PVALUE |
-|-------|-----|-----------|--------|
-| 1     | 1   | rs123     | 5e-08  |
-| X     | 2   | X:2_A/C   | 6e-09  |
-| Y     | 314 | Y:314_C/G | 1e-11  |
+| CHR | POS | REF | ALT | MARKER_ID | PVALUE |
+|-----|-----|-----|-----|-----------|--------|
+| 1   | 10  | A   | G   | 1:10_A/G  | 5e-08  |
+| 3   | 400 | C   | T   | 3:400_C/T | 1e-09  |
 
-You can specify the delimiter with `--delim` and the names of the columns with `--snp-col`, `--chrom-col`, `--pos-col`, `--pval-col`. The defaults are listed below under options. If you're analyzing multiple files, 1 per trait, you may want to tell swiss the name of your trait using `--trait <trait>`. This will include a TRAIT column in your output, which can be useful for joining results together later. 
+You can specify the delimiter with `--delim` and the names of the columns with `--variant-col`, `--chrom-col`, `--pos-col`, `--pval-col`. The defaults are listed below under options. If you're analyzing multiple files, 1 per trait, you may want to tell swiss the name of your trait using `--trait <trait>`. This will include a TRAIT column in your output, which can be useful for joining results together later. 
 
 The file can be gzipped. 
 
@@ -233,8 +261,7 @@ swiss --list-gwas-cats
 
 Build      Catalog
 -----      -------
-hg18       fusion
-hg19       fusion
+hg19       ebi
 ```
 
 Then you can select the catalog to use by `--gwas-cat fusion`, for example. Build is selected with `--build hg19`. 
