@@ -164,6 +164,20 @@ def find_ld_source(conf,build,ld_source):
     else:
       raise IOError, "Can't find LD source: " + entry
 
+def check_plink_version(plink_path):
+  from subprocess import check_output
+
+  version_string = check_output("{} --version".format(plink_path),shell=True).strip()
+  x, y, beta, z = re.search("v(\d+)\.(\d+)b?(\d+)?\.(\w+)",version_string).groups()
+
+  if int(x) >= 2:
+    return True
+
+  if int(x) >= 1 and int(y) > 9:
+    return True
+
+  return False
+
 def get_settings(arg_string=None):
   usage = "swiss [options]"
   parser = VerboseParser(usage=usage)
@@ -394,6 +408,14 @@ def get_settings(arg_string=None):
 
   opts.tabix_path = find_systematic(conf["tabix_path"])
   opts.plink_path = find_systematic(conf["plink_path"])
+
+  if opts.plink_path is None:
+    error("Could not find PLINK, it does not appear to be on your $PATH anywhere, or specified in a config file.")
+
+  if opts.tabix_path is None:
+    error("Could not find tabix, it does not appear to be on your $PATH anywhere, or specified in a config file.")
+
+  check_plink_version(opts.plink_path)
 
   out_exists = glob(os.path.join(opts.out,"*"))
   if len(out_exists) > 0:
