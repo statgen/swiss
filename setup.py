@@ -24,7 +24,7 @@ def datafiles(dirpath):
 
 setup(
   name = "swiss",
-  version = "1.0.0",
+  version = "1.0b1",
   author = "Ryan Welch",
   author_email = "welchr@umich.edu",
 
