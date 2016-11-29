@@ -26,14 +26,14 @@
 
 ## Synopsis
 
-Swiss is a tool for pruning association scan results from a GWAS or sequencing study, and identifying regions near or in LD with previously reported GWAS signals. 
+Swiss is a tool for pruning association scan results from a GWAS or sequencing study, and identifying regions near or in LD with previously reported GWAS signals.
 
 Swiss implements the following procedure:
 
-* Prune a list of variants using LD or distance, keeping the best variant by p-value (very similar to PLINK's method.) 
+* Prune a list of variants using LD or distance, keeping the best variant by p-value (very similar to PLINK's method.)
 * Identify which of the pruned variants are near, or in LD, with previously reported GWAS signals
 
-Swiss supports two main formats: 
+Swiss supports two main formats:
 
 * A tab-delimited file of association results with the usual columns (CHROM, POS, SNP, PVAL)
 * An EPACTS multi-assoc file containing association p-values across a number of traits
@@ -45,60 +45,90 @@ Swiss supports two main formats:
 * Tabix (available as a part of SAMtools, http://samtools.sourceforge.net/)
 * PLINK 1.9 or greater (https://www.cog-genomics.org/plink2)
 
+Both tabix and plink should be somewhere on your $PATH ideally, or alternatively you must specify their locations in the config file. Use `swiss --list-files` to find the config file.
+
 ## Download
 
 The latest package tarballs are here:
 
 | Version | Date       | Data for LD          | Size | File                                                        |
 |---------|------------|----------------------|------|-------------------------------------------------------------|
-| 1.0.0   | 11/27/2016 | Yes                  |      | <>
+| 1.0b1   | 11/27/2016 | Yes                  | 1.9G | https://portaldev.sph.umich.edu/swiss/swiss-1.0b1.tar.gz    |
 
-This Github site will always contain the most recent source code, and will usually be slightly ahead of the binary/packaged versions listed above. 
+This Github site will always contain the most recent source code, and will usually be slightly ahead of the binary/packaged versions listed above.
 
 ## Changes
 
-1.0.0 - 11/27/2016
+1.0b1 - 11/27/2016
 
 **This version has backwards incompatible changes with the previous 0.x
 releases.**
 
-New features: 
+New features:
 
-> Support for indel and other types of variants
-> --list-files will now show the current config file and data files in
-> use
+* Support for indel and other types of variants
 
-Backwards incompatible changes: 
+* Much improved speed in calculating LD
 
-> Swiss is installed now as a python package, instead of a standalone
-> directory. Some files have shifted around in locations. Use
-> --list-files to find installed locations. 
-> Config file is no longer stored relative to the swiss root directory,
-> but rather within the package directory (see above.) To override, you
-> can copy the default config file to ~/.config/swiss.yaml and modify
-> it. 
-> Option --snp-col is now --variant-col. The default is "MARKER_ID". 
-> Variants in your association results file must contain both ref and
-> alt alleles. This needs to be specified either 1) in the variant
-> column, as EPACTS style IDs (chr:pos_ref/alt), or 2) there must be
-> CHR, POS, REF, and ALT columns in the file.  
-> The default GWAS catalog has been renamed from nhgri to ebi. Use
-> --gwas-cat ebi to specify this catalog. It is currently only available
-> for hg19/GRCh37, but the hg38 version will be generated soon. 
+* New option --list-files will now show the current config file and data files in use
+
+Backwards incompatible changes:
+
+* Swiss is installed now as a python package, instead of a standalone directory. Some files have shifted around in locations. Use --list-files to find installed locations.
+
+* Swiss requires PLINK 1.9 or greater now to compute LD. It must exist on your $PATH, or the path must be set in the config file (see next).
+
+* Config file is no longer stored relative to the swiss root directory, but rather within the package directory. To override, you can copy the default config file to ~/.config/swiss.yaml and modify it. Use `swiss --list-files` to find the default config file.
+
+* Option --snp-col is now --variant-col. The default is "MARKER_ID". Variants in your association results file must contain both ref and alt alleles. This needs to be specified either 1) in the variant column, as EPACTS style IDs (chr:pos_ref/alt), or 2) there must be CHR, POS, REF, and ALT columns in the file.
+
+* The default GWAS catalog has been renamed from nhgri to ebi. Use `--gwas-cat ebi` to specify this catalog. It is currently only available for hg19/GRCh37, but the hg38 version will be generated soon.
+
+* The GWAS catalog now only contains a LOG_PVAL, rather than P_VALUE column. LOG_PVAL is -log10(p-value). As a result, .ld-gwas and .near-gwas files will have a GWAS_LOG_PVAL column, rather than the prior p-value based column.
 
 0.9.5 - 02/18/2016
 
-> Update NHGRI GWAS catalog
+* Update NHGRI GWAS catalog
 
 0.9.4 - 12/4/2014
 
-> Fixes a potential installation issue on Debian where virtualenv would
-> not install pip and setuptools
+* Fixes a potential installation issue on Debian where virtualenv would not install pip and setuptools
 
 ## Installation
 
-* Extract the tarball wherever you'd like
-* Run the bin/setup.py script
+### Using python + pip
+
+The installation can take quite a while due to the large download size. Please be patient.
+
+You can install directly from the tarball as a regular python package:
+
+```bash
+# Install globally
+pip install https://portaldev.sph.umich.edu/swiss/swiss-1.0b1.tar.gz
+
+# Install in ~/.local/ instead
+pip install --user https://portaldev.sph.umich.edu/swiss/swiss-1.0b1.tar.gz
+```
+
+If you don't have administrator privileges on your machine, you can install into your home directory by adding `--user`. This causes pip to install packages into `~/.local/lib/python2.7/site-packages/`, and binaries/scripts into `~/.local/bin/`. In this case, you will want to make sure `~/.local/bin/` is in your $PATH (`export PATH="/home/<user>/.local/bin:$PATH"`).
+
+An alternative would be to install into a virtualenv, to keep swiss encapsulated away from your main python packages:
+
+```bash
+virtualenv swiss
+source swiss/bin/activate
+pip install https://portaldev.sph.umich.edu/swiss/swiss-1.0b1.tar.gz
+swiss --help
+```
+
+If you're using anaconda/miniconda, and prefer to use conda environments rather than virtualenv, you could do:
+
+```bash
+conda create -n swiss
+source activate swiss
+pip install https://portaldev.sph.umich.edu/swiss/swiss-1.0b1.tar.gz
+swiss --help
+```
 
 ## Usage
 
@@ -110,28 +140,32 @@ swiss --assoc my_file.txt --ld-clump --clump-p 5e-08 --out my_results
 
 ### Genome build
 
-You should always specify which genome build you're working in by using `--build`. By default, the build is hg19. 
+You should always specify which genome build you're working in by using `--build`. By default, the build is hg19.
 
-Additionally, if you specify your own GWAS catalog, or VCF files for calculating LD, you should verify that the positions for these match the genome build of your association results. 
+Additionally, if you specify your own GWAS catalog, or VCF files for calculating LD, you should verify that the positions for these match the genome build of your association results.
 
 ### Association result formats
 
 #### Simple format
 
-The simplest format looks like your typical association results: 
+The simplest format looks like your typical association results:
 
 | CHR | POS | REF | ALT | MARKER_ID | PVALUE |
 |-----|-----|-----|-----|-----------|--------|
 | 1   | 10  | A   | G   | 1:10_A/G  | 5e-08  |
 | 3   | 400 | C   | T   | 3:400_C/T | 1e-09  |
 
-You can specify the delimiter with `--delim` and the names of the columns with `--variant-col`, `--chrom-col`, `--pos-col`, `--pval-col`. The defaults are listed below under options. If you're analyzing multiple files, 1 per trait, you may want to tell swiss the name of your trait using `--trait <trait>`. This will include a TRAIT column in your output, which can be useful for joining results together later. 
+You can specify the delimiter with `--delim` and the names of the columns with `--variant-col`, `--chrom-col`, `--pos-col`, `--pval-col`. The defaults are listed below under options.
 
-The file can be gzipped. 
+The "variant" column ideally is all EPACTS-formatted IDs (chr:pos_ref/alt). If they are not, then you **must** have a CHR, POS, REF, and ALT column so that these types of IDs can be constructed.
+
+If you're analyzing multiple files, 1 per trait, you may want to tell swiss the name of your trait using `--trait <trait>`. This will include a TRAIT column in your output, which can be useful for joining results together later.
+
+The file can be gzipped.
 
 #### EPACTS multi-assoc format
 
-Additionally, you can tell Swiss that your file is an EPACTS multi-assoc file with the `--multi-assoc` flag. This type of file looks like the following: 
+Additionally, you can tell Swiss that your file is an EPACTS multi-assoc file with the `--multi-assoc` flag. This type of file looks like the following:
 
 | #CHROM | BEG   | END   | MARKER_ID      | NS   | AC       | CALLRATE | GENOCNT  | MAF     | TRAIT1.P | TRAIT1.B | TRAIT2.P | TRAIT2.B |
 |--------|-------|-------|----------------|------|----------|----------|----------|---------|----------|----------|----------|----------|
@@ -145,15 +179,15 @@ Additionally, you can tell Swiss that your file is an EPACTS multi-assoc file wi
 | 1      | 66221 | 66221 | 1:66221_A/AT   | 8448 | 338.19   | 1        | 8448/0/0 | 0.02002 | 0.0378   | 1.24     | 0.211    | 0.747    |
 | 1      | 66222 | 66223 | 1:66222_TA/T   | 8448 | 298.81   | 1        | 8448/0/0 | 0.01769 | 0.0653   | 1.13     | 0.314    | 0.615    |
 
-There are a set of columns (.P, .B) for each trait that was analyzed. The file is tab-delimited, and gzipped. 
+There are a set of columns (.P, .B) for each trait that was analyzed. The file is tab-delimited, and gzipped.
 
-Example command line: 
+Example command line:
 
 ```bash
-swiss --assoc results.epacts.gz --multi-assoc --out my_results 
+swiss --assoc results.epacts.gz --multi-assoc --out my_results
 ```
 
-By default, swiss will try to run on every single trait given in the file. However, if you only wish to look at a single trait, you can use `--trait` instead: 
+By default, swiss will try to run on every single trait given in the file. However, if you only wish to look at a single trait, you can use `--trait` instead:
 
 ```bash
 swiss --assoc results.epacts.gz --multi-assoc --out my_results --trait TRAIT1
@@ -161,9 +195,9 @@ swiss --assoc results.epacts.gz --multi-assoc --out my_results --trait TRAIT1
 
 If you're running on a machine with multiple CPU cores, you can ask swiss to do multiple traits from the multi-assoc file at the same time by telling it how many to run with `-T <num of parallel jobs>`. Please remember these run on the same machine, and not on the cluster - **do not overwhelm the machine!**
 
-### LD sources 
+### LD sources
 
-Swiss comes with a few built-in sources of LD information: 
+Swiss comes with a few built-in sources of LD information:
 
 ```bash
 swiss --list-ld-sources
@@ -173,26 +207,26 @@ Build      LD Sources
 hg19       1000G_2012-03_AFR, 1000G_2012-03_AMR, 1000G_2012-03_ASN, 1000G_2012-03_EUR, GOT2D_2011-11
 ```
 
-You can select different sources to use when LD pruning results, and when looking for GWAS catalog variants in LD. For example, you may wish to use your own genotypes for pruning (since they will cover all of your markers), but when looking for GWAS catalog variants in LD, it may be better to use a reference panel such as GoT2D for better coverage of your novel variants + known GWAS variants. 
+You can select different sources to use when LD pruning results, and when looking for GWAS catalog variants in LD. For example, you may wish to use your own genotypes for pruning (since they will cover all of your markers), but when looking for GWAS catalog variants in LD, it may be better to use a reference panel such as GoT2D for better coverage of your novel variants + known GWAS variants.
 
-* For the pruning step, use: `--ld-clump-source <name>`. 
-* For the GWAS catalog LD lookup step, use: `--ld-gwas-source <name>`. 
+* For the pruning step, use: `--ld-clump-source <name>`.
+* For the GWAS catalog LD lookup step, use: `--ld-gwas-source <name>`.
 
 Both options can be the same (and in fact, if you only specify one of them, *it assumes you meant to use that source for both.*)
 
-You can always provide a VCF directly to use instead of selecting a built-in one: 
+You can always provide a VCF directly to use instead of selecting a built-in one:
 
 ```bash
 swiss --ld-clump-source /path/to/vcf.gz
 ```
 
-If you have multiple VCF files split up across chromosomes, you can specify a .json file that maps chromosomes to VCF files: 
+If you have multiple VCF files split up across chromosomes, you can specify a .json file that maps chromosomes to VCF files:
 
 ```bash
 swiss --ld-clump-source /path/to/vcfmap.json
 ```
 
-Where the `vcfmap.json` file looks like: 
+Where the `vcfmap.json` file looks like:
 
 ```
 {
@@ -222,39 +256,39 @@ Where the `vcfmap.json` file looks like:
 }
 ```
 
-JSON format is a little fussy, so be careful. Make sure to use **double quotes** like above. 
+JSON format is a little fussy, so be careful. Make sure to use **double quotes** like above.
 
 ### Filtering results
 
-If you provided an imputation quality column in your association results (specified with `--rsq-col`), swiss can remove variants below a certain threshold using `--rsq-filter <threshold>`. 
+If you provided an imputation quality column in your association results (specified with `--rsq-col`), swiss can remove variants below a certain threshold using `--rsq-filter <threshold>`.
 
 ### Clumping options
 
 #### LD based clumping
 
-Swiss can clump your association results using LD. The result being that only the best variants by p-value are kept first, and the remaining variants in LD with it are dropped. 
+Swiss can clump your association results using LD. The result being that only the best variants by p-value are kept first, and the remaining variants in LD with it are dropped.
 
 ```bash
 swiss --ld-clump --ld-clump-source GOT2D_2011-11 --clump-ld-thresh 0.8 --clump-p 4e-09
 ```
 
-In the example above, variants in LD (r2) > 0.8 with the top variant per region are removed, and only variants with a p-value < 4e-09 are  considered at all. 
+In the example above, variants in LD (r2) > 0.8 with the top variant per region are removed, and only variants with a p-value < 4e-09 are  considered at all.
 
 #### Distance based clumping
 
-Similarly, you can prune based on distance. The best variants by p-value are retained, the remaining variants within X distance are dropped, and this process is continued until no variants remain to be considered. 
+Similarly, you can prune based on distance. The best variants by p-value are retained, the remaining variants within X distance are dropped, and this process is continued until no variants remain to be considered.
 
 ```bash
 swiss --dist-clump --clump-dist 250000
 ```
 
-In the example, variants within 250kb of the best p-value variant are removed, and so forth. 
+In the example, variants within 250kb of the best p-value variant are removed, and so forth.
 
 ### GWAS catalogs
 
-Swiss supports two types of GWAS catalogs: built-in ones that come with the program, and user-supplied catalogs. 
+Swiss supports two types of GWAS catalogs: built-in ones that come with the program, and user-supplied catalogs.
 
-The built-in catalogs can be found by doing: 
+The built-in catalogs can be found by doing:
 
 ```bash
 swiss --list-gwas-cats
@@ -264,11 +298,11 @@ Build      Catalog
 hg19       ebi
 ```
 
-Then you can select the catalog to use by `--gwas-cat fusion`, for example. Build is selected with `--build hg19`. 
+Then you can select the catalog to use by `--gwas-cat fusion`, for example. Build is selected with `--build hg19`.
 
-The fusion catalog is an internal one maintained by our group here. 
+The fusion catalog is an internal one maintained by our group here.
 
-If you'd like a list of traits contained in a particular catalog: 
+If you'd like a list of traits contained in a particular catalog:
 
 ```bash
 swiss --list-gwas-traits
@@ -294,40 +328,39 @@ Amino acids clumped
 5-oxoproline
 ```
 
-You can also specify your own GWAS catalog by giving a filename instead of a codename for the catalog, like: `--gwas-cat /path/to/my/gwascat.tab`. 
+You can also specify your own GWAS catalog by giving a filename instead of a codename for the catalog, like: `--gwas-cat /path/to/my/gwascat.tab`.
 
 The GWAS catalog format looks like the following (tab-delimited):
 
-| SNP         | CHR | POS      | Group       | PHENO  | P_VALUE  |
-|-------------|-----|----------|-------------|--------|----------|
-| rs59793352  | 11  | 61420989 | Fatty acids | Bis/FA | 1.11E-11 |
-| rs3932169   | 11  | 61420990 | Fatty acids | Bis/FA | 1.29E-15 |
-| 11-61220700 | 11  | 61464124 | Fatty acids | Bis/FA | 4.38E-11 |
-| rs2240286   | 11  | 61506454 | Fatty acids | Bis/FA | 1.16E-13 |
-| 11-61288386 | 11  | 61531810 | Fatty acids | Bis/FA | 2.09E-10 |
-| rs149803    | 11  | 61539020 | Fatty acids | Bis/FA | 9.30E-17 |
+| VARIANT    | EPACTS           |   CHR |       POS | REF   | ALT   | GROUP              | PHENO              |   LOG_PVAL |
+|:-----------|:-----------------|------:|----------:|:------|:------|:-------------------|:-------------------|-----------:|
+| rs964184   | 11:116648917_G/C |    11 | 116648917 | G     | C     | Vitamin E levels   | Vitamin E levels   |      11.1  |
+| rs2108622  | 19:15990431_C/T  |    19 |  15990431 | C     | T     | Vitamin E levels   | Vitamin E levels   |      10    |
+| rs11057830 | 12:125307053_G/A |    12 | 125307053 | G     | A     | Vitamin E levels   | Vitamin E levels   |       8.1  |
+| rs3130573  | 6:31106268_A/G   |     6 |  31106268 | A     | G     | Systemic sclerosis | Systemic sclerosis |       9.22 |
+| rs6457617  | 6:32663851_C/T   |     6 |  32663851 | C     | T     | Systemic sclerosis | Systemic sclerosis |      36.7  |
 
-It can contain additional columns, for example you may have citations along with each hit or other supporting information: 
 
-| SNP         | CHR | POS      | CITATION                         | EFFECT_ALLELE | EFFECT_SIZE | Group       | PHENO  | POPULATION         | P_VALUE  |
-|-------------|-----|----------|----------------------------------|---------------|-------------|-------------|--------|--------------------|----------|
-| rs59793352  | 11  | 61420989 | Kettunen et al. (Nat Genet 2012) | G             | -0.14       | Fatty acids | Bis/FA | European (Finnish) | 1.11E-11 |
-| rs3932169   | 11  | 61420990 | Kettunen et al. (Nat Genet 2012) | G             | -0.17       | Fatty acids | Bis/FA | European (Finnish) | 1.29E-15 |
-| 11-61220700 | 11  | 61464124 | Kettunen et al. (Nat Genet 2012) | A             | -0.34       | Fatty acids | Bis/FA | European (Finnish) | 4.38E-11 |
-| rs2240286   | 11  | 61506454 | Kettunen et al. (Nat Genet 2012) | C             | 0.15        | Fatty acids | Bis/FA | European (Finnish) | 1.16E-13 |
-| 11-61288386 | 11  | 61531810 | Kettunen et al. (Nat Genet 2012) | G             | -0.29       | Fatty acids | Bis/FA | European (Finnish) | 2.09E-10 |
-| rs149803    | 11  | 61539020 | Kettunen et al. (Nat Genet 2012) | G             | 0.23        | Fatty acids | Bis/FA | European (Finnish) | 9.30E-17 |
+It can contain additional columns, for example you may have citations along with each hit or other supporting information:
 
-The extra columns will be included with the output from Swiss. 
+| VARIANT    | EPACTS           | CHRPOS       |   CHR |       POS | REF   | ALT   | PHENO              | GROUP              |   LOG_PVAL | CITATION                       | RISK_ALLELE   |   RISK_AL_FREQ | GENE_LABEL         |   OR_BETA |
+|:-----------|:-----------------|:-------------|------:|----------:|:------|:------|:-------------------|:-------------------|-----------:|:-------------------------------|:--------------|---------------:|:-------------------|----------:|
+| rs964184   | 11:116648917_G/C | 11:116648917 |    11 | 116648917 | G     | C     | Vitamin E levels   | Vitamin E levels   |      11.1  | Major JM et al.  Hum Mol Genet | G             |           0.15 | ZNF259,APOA5,BUD13 |      0.04 |
+| rs2108622  | 19:15990431_C/T  | 19:15990431  |    19 |  15990431 | C     | T     | Vitamin E levels   | Vitamin E levels   |      10    | Major JM et al.  Hum Mol Genet | T             |           0.21 | CYP4F2             |      0.03 |
+| rs11057830 | 12:125307053_G/A | 12:125307053 |    12 | 125307053 | G     | A     | Vitamin E levels   | Vitamin E levels   |       8.1  | Major JM et al.  Hum Mol Genet | A             |           0.15 | SCARB1             |      0.03 |
+| rs3130573  | 6:31106268_A/G   | 6:31106268   |     6 |  31106268 | A     | G     | Systemic sclerosis | Systemic sclerosis |       9.22 | Allanore Y et al.  PLoS Genet  | G             |           0.32 | PSORS1C1           |      1.25 |
+| rs6457617  | 6:32663851_C/T   | 6:32663851   |     6 |  32663851 | C     | T     | Systemic sclerosis | Systemic sclerosis |      36.7  | Allanore Y et al.  PLoS Genet  | T             |           0.5  | HLA,DQB1           |      1.61 |
+
+The extra columns will be included with the output from Swiss.
 
 ### GWAS catalog lookups
 
-After LD or distance based clumping, Swiss will look for GWAS catalog hits that are near, or in LD, with your clumped/top variants. It does both and generates two files, one for each: 
+After LD or distance based clumping, Swiss will look for GWAS catalog hits that are near, or in LD, with your clumped/top variants. It does both and generates two files, one for each:
 
 * prefix.ld-gwas.tab - file contains GWAS catalog variants that were in LD with your top variants after clumping
 * prefix.near-gwas.tab - contains GWAS catalogs near your top variants by distance
 
-You can control the LD threshold using `--gwas-cat-ld <threshold>` and distance threshold using `--gwas-cat-dist <threshold>`. 
+You can control the LD threshold using `--gwas-cat-ld <threshold>` and distance threshold using `--gwas-cat-dist <threshold>`.
 
 Swiss normally only includes columns from the GWAS catalog (as well as a few relevant columns from your association results) in these files. If you want to include additional columns from your assoc file:
 
@@ -337,19 +370,19 @@ swiss --assoc my_assoc.txt --include-cols "RSQ,EFF_AL,EFF_FREQ"
 
 ### Output from Swiss
 
-Swiss generates the two GWAS catalog lookup files (listed above), and a third .clump file containing your top variants after clumping. The files are named starting with a prefix given by `--out`, for example: 
+Swiss generates the two GWAS catalog lookup files (listed above), and a third .clump file containing your top variants after clumping. The files are named starting with a prefix given by `--out`, for example:
 
 ```bash
 swiss --assoc my_assoc.txt --ld-clump --out prefix
 ```
 
-Will create: 
+Will create:
 
 * prefix.ld-gwas.tab
 * prefix.near-gwas.tab
 * prefix.clump
 
-The .clump file looks like this: 
+The .clump file looks like this:
 
 | #CHROM | BEG      | END      | MARKER_ID                | PVALUE   | BETA    | MRSQ    | TRAIT  | ld_with                                                                  | ld_with_values | failed_clump |
 |--------|----------|----------|--------------------------|----------|---------|---------|--------|--------------------------------------------------------------------------|----------------|--------------|
@@ -358,11 +391,11 @@ The .clump file looks like this:
 | 11     | 60859791 | 60859791 | 11:60859791_C/T_rs175133 | 9.51E-11 | 0.118   | 0.99901 | otPUFA | 11:60899767_A/G_exm915580,11:60853986_A/G,11:60859624_A/C_SNP11-60616200 | 0.40,0.60,0.61 | pass         |
 | 11     | 60866519 | 60866519 | 11:60866519_A/ACCCAG     | 1.49E-11 | -0.246  | 0.94861 | otPUFA |                                                                          |                | fail         |
 
-The `ld_with` column gives a comma separated list of variants that were pruned away (if LD clumping was used.) The r2 values are given for each variant (in the same order) in the `ld_with_values` column. 
+The `ld_with` column gives a comma separated list of variants that were pruned away (if LD clumping was used.) The r2 values are given for each variant (in the same order) in the `ld_with_values` column.
 
-If a variant failed LD calculation for some reason (not present in the VCF file, variant was an indel, etc.) the `failed_clump` column will say **fail**. The program will also generate a warning while running. 
+If a variant failed LD calculation for some reason (not present in the VCF file, variant was an indel, etc.) the `failed_clump` column will say **fail**. The program will also generate a warning while running.
 
-The .ld-gwas.tab and .near-gwas.tab files are very similar (removing some columns for brevity): 
+The .ld-gwas.tab and .near-gwas.tab files are very similar (removing some columns for brevity):
 
 | ASSOC_MARKER    | ASSOC_CHRPOS | ASSOC_TRAIT | GWAS_SNP   | GWAS_CHRPOS | ASSOC_GWAS_LD | GWAS_GENE_LABEL | GWAS_Group | GWAS_PHENO | GWAS_P_VALUE |
 |-----------------|--------------|-------------|------------|-------------|---------------|-----------------|------------|------------|--------------|
@@ -371,15 +404,15 @@ The .ld-gwas.tab and .near-gwas.tab files are very similar (removing some column
 | 15:58683366_A/G | 15:58683366  | TotFA       | rs10468017 | 15:58678512 | 0.636239711   | LIPC            | Lipids     | HDL        | 8.00E-23     |
 | 15:58683366_A/G | 15:58683366  | TotFA       | rs1532085  | 15:58683366 | 1             | LIPC            | Lipids     | HDL        | 1.00E-188    |
 
-* ASSOC_MARKER: Variant from your clumped association results (the top hit.) 
+* ASSOC_MARKER: Variant from your clumped association results (the top hit.)
 * ASSOC_CHRPOS: CHR:POS naming for the variant
-* ASSOC_TRAIT: Either taken from the multi-assoc file, or specified with `--trait`. 
-* GWAS_SNP: The GWAS catalog variant that your ASSOC_MARKER is in LD with. 
-* ASSOC_GWAS_LD: The r2 between the GWAS_SNP and the ASSOC_MARKER. 
-* GWAS_PHENO: The phenotype associated with the GWAS_SNP according to the GWAS catalog. 
-* GWAS_P_VALUE: P-value reported in the GWAS catalog. 
+* ASSOC_TRAIT: Either taken from the multi-assoc file, or specified with `--trait`.
+* GWAS_SNP: The GWAS catalog variant that your ASSOC_MARKER is in LD with.
+* ASSOC_GWAS_LD: The r2 between the GWAS_SNP and the ASSOC_MARKER.
+* GWAS_PHENO: The phenotype associated with the GWAS_SNP according to the GWAS catalog.
+* GWAS_P_VALUE: P-value reported in the GWAS catalog.
 
-The .near-gwas.tab file has ASSOC_GWAS_DIST instead of ASSOC_GWAS_LD, and denotes the distance between the ASSOC_MARKER and the GWAS_SNP. 
+The .near-gwas.tab file has ASSOC_GWAS_DIST instead of ASSOC_GWAS_LD, and denotes the distance between the ASSOC_MARKER and the GWAS_SNP.
 
 ### Common command-lines used
 
@@ -390,9 +423,9 @@ swiss --assoc example.multiassoc.epacts.gz --multi-assoc \
 --gwas-cat nhgri --ld-clump --clump-p 5e-08 --out example
 ```
 
-The command above will: 
+The command above will:
 
-* Run on an EPACTS multiassoc file (and do all traits. To do a single trait, use `--trait`). 
+* Run on an EPACTS multiassoc file (and do all traits. To do a single trait, use `--trait`).
 * Use LD clumping to prune variants, and use VCF files specified by metsim_got2d_exomechip.json to do it
 * Remove any variant with p-value > 5e-08
 * Use the NHGRI GWAS catalog for looking up GWAS variants in LD with top signals
@@ -407,7 +440,7 @@ swiss --assoc my_results.tab --delim tab --chrom-col CHROM --pos-col POS --pval-
 --gwas-cat nhgri --dist-clump --clump-p 5e-08 --clump-dist 500000 --out example
 ```
 
-The command above will: 
+The command above will:
 
 * Run on a simple tab-delimited format of GWAS association results, specifying the column names directly
 * Filter variants on imputation quality 0.3
@@ -553,9 +586,9 @@ The command above will:
 
 ## Limitations
 
-Currently does not support indels (or to be more exact, indels are simply skipped and left alone in your results, and flagged with a **fail**. 
+Currently does not support indels (or to be more exact, indels are simply skipped and left alone in your results, and flagged with a **fail**.
 
-The latest human genome build (hg38) is not supported. 
+The latest human genome build (hg38) is not supported.
 
 ## License
 
@@ -573,4 +606,3 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
