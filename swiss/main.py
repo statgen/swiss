@@ -155,6 +155,9 @@ def download_swiss_data(data_dir):
   tar = tarfile.open(local_pkg)
   tar.extractall(data_dir)
 
+  # Delete tarball now that it isn't needed
+  os.remove(local_pkg)
+
   # Write out the data version. This also serves as the semaphore that the download
   # and extraction completed successfully.
   with open(local_pkg.replace(".tar.gz",".version"),"wt") as fp:
