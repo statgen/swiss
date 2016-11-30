@@ -137,7 +137,7 @@ Swiss requires these two programs to function:
 
 Make sure both are installed and somewhere on your $PATH.
 
-Alternatively, you can create a user config (follow instructions by `swiss --list-files`) and use this to specify the paths to the plink and tabix binaries. 
+Alternatively, you can create a user config (follow instructions by `swiss --list-files`) and use this to specify the paths to the plink and tabix binaries.
 
 ### Download supporting data files (optional)
 
@@ -469,8 +469,18 @@ The command above will:
 ## Options
 
 ```
+usage: swiss [options]
+
   -h, --help
     show this help message and exit
+
+  --list-files
+    Show the locations of files in use by swiss.
+    Default value is: False
+
+  --download-data
+    Download pre-formatted and compiled data (LD, GWAS catalogs, etc.)
+    Default value is: False
 
   --assoc <string>
     [Required] Association results file.
@@ -490,13 +500,13 @@ The command above will:
     Genome build your association results are anchored to.
     Default value is: hg19
 
-  --snp-col <string>
-    SNP column name in results file.
-    Default value is: MarkerName
+  --variant-col <string>
+    Variant column name in results file.
+    Default value is: MARKER_ID
 
   --pval-col <string>
     P-value column name in results file.
-    Default value is: P-value
+    Default value is: PVALUE
 
   --chrom-col <string>
     Chromosome column name in results file.
@@ -509,6 +519,10 @@ The command above will:
   --rsq-col <string>
     Imputation quality column name.
     Default value is: RSQ
+
+  --trait-col <string>
+    Trait column name. Can be omitted, in which case the value of --trait will be added as a column.
+    Default value is: None
 
   --rsq-filter <string>
     Remove variants below this imputation quality.
@@ -526,7 +540,7 @@ The command above will:
     Clump association results by LD.
     Default value is: False
 
-  --clump-p <float>
+  --clump-p <string>
     P-value threshold for LD and distance based clumping.
     Default value is: 5e-08
 
@@ -548,7 +562,7 @@ The command above will:
 
   --ld-clump-source <string>
     Name of pre-configured LD source, or a VCF file from which to compute LD.
-    Default value is: GOT2D_2011-11
+    Default value is: 1000G_2012-03_EUR
 
   --list-ld-sources
     Print a list of available LD sources for each genome build.
@@ -556,11 +570,11 @@ The command above will:
 
   --gwas-cat <string>
     GWAS catalog to use.
-    Default value is: fusion
+    Default value is: ebi
 
   --ld-gwas-source <string>
     Name of pre-configured LD source or VCF file to use when calculating LD with GWAS variants.
-    Default value is: GOT2D_2011-11
+    Default value is: 1000G_2012-03_EUR
 
   --list-gwas-cats
     Give a listing of all valid GWAS catalogs and their descriptions.
@@ -590,8 +604,12 @@ The command above will:
     List of columns to merge in from association results (grouped by variant.)
     Default value is: None
 
-  --skip-overlap-check
-    Skip the check of whether the GWAS catalog has variants that are not in your --ld-gwas-source.
+  --do-overlap-check
+    Perform the check of whether the GWAS catalog has variants that are not in your --ld-gwas-source.
+    Default value is: False
+
+  --skip-gwas
+    Skip the step of looking for GWAS hits in LD with top variants after clumping.
     Default value is: False
 
   --cache <string>
@@ -601,6 +619,10 @@ The command above will:
   -T, --threads <int>
     Number of parallel jobs to run. Only works with --multi-assoc currently.
     Default value is: 1
+
+  --version
+    Print version and exit.
+    Default value is: False
 ```
 
 ## Limitations
