@@ -128,6 +128,17 @@ pip install https://portaldev.sph.umich.edu/swiss/swiss-1.0b1.tar.gz
 swiss --help
 ```
 
+### Install required dependencies
+
+Swiss requires these two programs to function:
+
+* Tabix (available as a part of SAMtools, http://samtools.sourceforge.net/)
+* PLINK 1.9 or greater (https://www.cog-genomics.org/plink2)
+
+Make sure both are installed and somewhere on your $PATH.
+
+Alternatively, you can create a user config (follow instructions by `swiss --list-files`) and use this to specify the paths to the plink and tabix binaries. 
+
 ### Download supporting data files (optional)
 
 If you're planning to run swiss with your own GWAS catalog and LD files, you can skip this step. Otherwise, after installing (above), you can download all supporting data by doing:
