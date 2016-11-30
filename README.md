@@ -627,9 +627,7 @@ usage: swiss [options]
 
 ## Limitations
 
-Currently does not support indels (or to be more exact, indels are simply skipped and left alone in your results, and flagged with a **fail**.
-
-The latest human genome build (hg38) is not supported.
+The latest human genome build (hg38) is not yet supported. 
 
 ## License
 
