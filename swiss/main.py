@@ -119,20 +119,24 @@ def download_swiss_data(data_dir):
   local_version = None
   remote_version = None
 
+  # We won't bother updating/downloading the data if the data version matches
+  try:
+    resp = urlopen(version_url)
+    remote_version = int(resp.read().strip())
+  except:
+    error("Failed to download data version from " + version_url)
+
   if p.isfile(vfile):
     with open(vfile,"rt") as fp:
       local_version = int(fp.read().strip())
 
-    # We won't bother updating/downloading the data if the data version matches
-    try:
-      resp = urlopen(version_url)
-      remote_version = int(resp.read().strip())
-    except:
-      error("Failed to download data version from " + version_url)
-
     if local_version == remote_version:
       print "Data is already up to date"
       return
+    else:
+      print "A data update is available, downloading..."
+  else:
+    print "Downloading data for swiss..."
 
   # Looks like we need to download the data.
   with tqdm(unit='B',unit_scale=True,miniters=1,desc=DATA_URL.split('/')[-1]) as t:
@@ -144,7 +148,7 @@ def download_swiss_data(data_dir):
   # Verify the data
   print "Verifying data..."
   checksum_computed = check_output("sha512sum " + local_pkg,shell=True,universal_newlines=True).split()[0]
-  with open(local_sum) as fp:
+  with open(local_sum,"rt") as fp:
     checksum_read = fp.read().split()[0]
 
   if checksum_computed != checksum_read:
@@ -383,7 +387,6 @@ def get_settings(arg_string=None):
     print >> sys.stderr, ""
 
   if opts.download_data:
-    print("Downloading data for swiss...")
     download_swiss_data(data_dir)
     sys.exit(0)
 
