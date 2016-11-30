@@ -27,6 +27,11 @@ import traceback
 import difflib
 import pandas as pd
 import appdirs
+import tarfile
+from six.moves.urllib_parse import urlparse
+from six.moves.urllib.request import urlopen
+from six.moves.urllib.request import urlretrieve
+from subprocess import check_output
 from optparse import *
 from termcolor import *
 from glob import glob
@@ -40,6 +45,7 @@ from VerboseParser import *
 from multiprocessing import Pool, cpu_count
 from pprint import pprint
 from textwrap import wrap
+from tqdm import tqdm
 import swiss.conf
 from swiss.conf.reader import read_conf
 from swiss.conf.writer import write_conf
@@ -49,6 +55,7 @@ PROG_VERSION = "1.0b1"
 PROG_DATE = "11/26/2016"
 PROG_AUTHOR = "Ryan Welch (welchr@umich.edu)"
 PROG_URL = "https://github.com/welchr/Swiss"
+DATA_URL = "https://portaldev.sph.umich.edu/swiss/swiss_data_{}.tar.gz".format(PROG_VERSION)
 
 __builtin__.SWISS_DEBUG = False
 
@@ -58,6 +65,102 @@ EPACTS_DTYPES = {
   "BEG" : pd.np.float64,
   "END" : pd.np.float64
 }
+
+def tqdm_hook(t):
+  """
+  Args:
+    t: tqdm object
+
+  Wraps tqdm instance. Don't forget to close() or __exit__()
+  the tqdm instance once you're done with it (easiest using `with` syntax).
+  """
+
+  last_b = [0]
+
+  def inner(b=1,bsize=1,tsize=None):
+    """
+    Args:
+      b : int, optional
+          Number of blocks just transferred [default: 1].
+      bsize : int, optional
+          Size of each block (in tqdm units) [default: 1].
+      tsize : int, optional
+          Total size (in tqdm units). If [default: None] remains unchanged.
+    """
+
+    if tsize is not None:
+      t.total = tsize
+
+    t.update((b - last_b[0]) * bsize)
+    last_b[0] = b
+
+  return inner
+
+def download_swiss_data(data_dir):
+  import os.path as p
+
+  # Check if the data directory exists, create if not
+  if not p.isdir(data_dir):
+    try:
+      os.makedirs(data_dir)
+      print "Created data directory: " + data_dir
+    except FileExistsError:
+      pass
+    except PermissionError:
+      error("Unable to create swiss data directory due to insufficient permissions: " + data_dir)
+
+  # Needed filenames/paths
+  data_pkg = p.basename(urlparse(DATA_URL).path)
+  version_url = DATA_URL.replace(".tar.gz",".version")
+  checksum_url = DATA_URL.replace(".tar.gz",".sha512")
+  local_pkg = p.join(data_dir,data_pkg)
+  local_sum = local_pkg.replace(".tar.gz",".sha512")
+  vfile = local_pkg.replace(".tar.gz",".version")
+  local_version = None
+  remote_version = None
+
+  if p.isfile(vfile):
+    with open(vfile,"rt") as fp:
+      local_version = int(fp.read().strip())
+
+    # We won't bother updating/downloading the data if the data version matches
+    try:
+      resp = urlopen(version_url)
+      remote_version = int(resp.read().strip())
+    except:
+      error("Failed to download data version from " + version_url)
+
+    if local_version == remote_version:
+      print "Data is already up to date"
+      return
+
+  # Looks like we need to download the data.
+  with tqdm(unit='B',unit_scale=True,miniters=1,desc=DATA_URL.split('/')[-1]) as t:
+    urlretrieve(DATA_URL,filename=local_pkg,reporthook=tqdm_hook(t),data=None)
+
+  with tqdm(unit='B',unit_scale=True,miniters=1,desc=checksum_url.split('/')[-1]) as t:
+    urlretrieve(checksum_url,filename=local_sum,reporthook=tqdm_hook(t),data=None)
+
+  # Verify the data
+  print "Verifying data..."
+  checksum_computed = check_output("sha512sum " + local_pkg,shell=True,universal_newlines=True).split()[0]
+  with open(local_sum) as fp:
+    checksum_read = fp.read().split()[0]
+
+  if checksum_computed != checksum_read:
+    raise IOError("SHA512 computed for {} is {} but does not match downloaded checksum {}".format(local_pkg,checksum_computed,checksum_read))
+
+  # Looks like we're OK. Extract the data.
+  print "Extracting data..."
+  tar = tarfile.open(local_pkg)
+  tar.extractall(data_dir)
+
+  # Write out the data version. This also serves as the semaphore that the download
+  # and extraction completed successfully.
+  with open(local_pkg.replace(".tar.gz",".version"),"wt") as fp:
+    print >> fp, remote_version
+
+  print "Data downloaded and installed successfully"
 
 def find_likely_file(filepath):
   orig = os.path.split(filepath)[1]
@@ -87,6 +190,9 @@ class BasePair:
 def get_user_config_path():
   from os import path as p
   return p.join(appdirs.user_config_dir(),"swiss.yaml")
+
+def get_swiss_data_dir():
+  return appdirs.user_data_dir("swiss")
 
 def get_conf(fpath=None):
   from os import path as p
@@ -134,6 +240,7 @@ def print_program_header():
 
 def find_gwas_catalog(conf,build,gwas_cat):
   import os.path as p
+  data_dir = get_swiss_data_dir() if conf["data_dir"] is None else conf["data_dir"]
 
   entry = conf["gwas_catalogs"][build][gwas_cat]
   if p.isfile(entry):
@@ -141,7 +248,7 @@ def find_gwas_catalog(conf,build,gwas_cat):
   else:
     # Relative to package install location
     import swiss
-    default = p.join(swiss.__path__[0],entry)
+    default = p.join(data_dir,entry)
     
     if p.isfile(default):
       return default
@@ -150,6 +257,7 @@ def find_gwas_catalog(conf,build,gwas_cat):
 
 def find_ld_source(conf,build,ld_source):
   import os.path as p
+  data_dir = get_swiss_data_dir() if conf["data_dir"] is None else conf["data_dir"]
 
   entry = conf["ld_sources"][build][ld_source]
   if p.isfile(entry):
@@ -157,7 +265,7 @@ def find_ld_source(conf,build,ld_source):
   else:
     # Relative to package install location
     import swiss
-    default = p.join(swiss.__path__[0],entry)
+    default = p.join(data_dir,entry)
     
     if p.isfile(default):
       return default
@@ -183,6 +291,7 @@ def get_settings(arg_string=None):
   parser = VerboseParser(usage=usage)
 
   parser.add_option("--list-files",help="Show the locations of files in use by swiss.",default=False,action="store_true")
+  parser.add_option("--download-data",help="Download pre-formatted and compiled data (LD, GWAS catalogs, etc.)",default=False,action="store_true")
 
   # Association result input options. 
   parser.add_option("--assoc",help="[Required] Association results file.")
@@ -238,18 +347,24 @@ def get_settings(arg_string=None):
   # Misc options
   parser.add_option("-T","--threads",default=1,type="int",help="Number of parallel jobs to run. Only works with --multi-assoc currently.")
   parser.add_option("--debug",default=False,action="store_true",help=SUPPRESS_HELP)
+  parser.add_option("--version",help="Print version and exit.",default=False,action="store_true")
 
   if arg_string is None:
     (opts,args) = parser.parse_args()
   else:
     (opts,args) = parser.parse_args(shlex.split(arg_string))
 
+  if opts.version:
+    print PROG_VERSION
+    sys.exit(0)
+
   conf = get_conf()
+  data_dir = get_swiss_data_dir() if conf["data_dir"] is None else conf["data_dir"]
 
   if opts.list_files:
     print "Configuration file was found at: " + conf["config_path"]
     print "The config file can be overridden by copying the default.yaml file to " + get_user_config_path()
-    print "The default swiss data directory is: " + os.path.join(swiss.__path__[0],"data/")
+    print "The swiss data directory is: " + data_dir
     sys.exit(0)
 
   if opts.debug:
@@ -263,6 +378,11 @@ def get_settings(arg_string=None):
     for x in sys.path:
       print >> sys.stderr, x
     print >> sys.stderr, ""
+
+  if opts.download_data:
+    print("Downloading data for swiss...")
+    download_swiss_data(data_dir)
+    sys.exit(0)
 
   if opts.threads < 1:
     opts.threads = 1
@@ -833,9 +953,10 @@ def proc_multi(trait,opts):
       log_obj.close()
 
 def main(arg_string=None):
+  (opts,args) = get_settings(arg_string)
+
   print_program_header()
   print ""
-  (opts,args) = get_settings(arg_string)
 
   # If we're running single threaded, everything will go to the same log file.
   # Otherwise, each thread will create its own log.

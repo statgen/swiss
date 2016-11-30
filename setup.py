@@ -20,7 +20,7 @@ setup(
   license = "LICENSE.txt",
   description = "Software to help identify overlap between association scan results and GWAS hit catalogs.",
 
-  long_description=open("README.md").read(),
+  long_description = open("README.md").read(),
 
   install_requires = [
     "termcolor",
@@ -28,7 +28,9 @@ setup(
     "pysam",
     "bx-python",
     "pyyaml",
-    "appdirs"
+    "appdirs",
+    "tqdm",
+    "six"
   ],
 
   scripts = [

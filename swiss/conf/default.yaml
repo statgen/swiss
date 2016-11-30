@@ -4,6 +4,12 @@ tabix_path: "tabix"
 # See: https://www.cog-genomics.org/plink2
 plink_path: "plink"
 
+# Location in which swiss should look for data files (gwas catalog, LD, etc.) 
+# If the value is null, then we default to using the typical user data directory
+# for your platform. On Linux, this is typically ~/.local/share/swiss/ and on macOS 
+# it would be ~/Library/Application Support/swiss/. 
+data_dir: null
+
 gwas_catalogs:
   hg19:
     ebi: "data/gwascat/gwascat_ebi_GRCh37p13.tab"

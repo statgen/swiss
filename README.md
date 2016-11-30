@@ -98,8 +98,6 @@ Backwards incompatible changes:
 
 ### Using python + pip
 
-The installation can take quite a while due to the large download size. Please be patient.
-
 You can install directly from the tarball as a regular python package:
 
 ```bash
@@ -129,6 +127,16 @@ source activate swiss
 pip install https://portaldev.sph.umich.edu/swiss/swiss-1.0b1.tar.gz
 swiss --help
 ```
+
+### Download supporting data files (optional)
+
+If you're planning to run swiss with your own GWAS catalog and LD files, you can skip this step. Otherwise, after installing (above), you can download all supporting data by doing:
+
+```
+swiss --download-data
+```
+
+This tries to install data into your user data directory (typically ~/.local/share/swiss on nix systems). If you want to use a different directory, copy the config file (follow instructions from `swiss --list-files`) and change the `data_dir` parameter.
 
 ## Usage
 
