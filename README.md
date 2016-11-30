@@ -115,7 +115,7 @@ An alternative would be to install into a virtualenv, to keep swiss encapsulated
 ```bash
 virtualenv swiss
 source swiss/bin/activate
-pip install https://portaldev.sph.umich.edu/swiss/swiss-1.0b1.tar.gz
+pip install git+https://github.com/welchr/swiss.git@v1.0b1
 swiss --help
 ```
 
@@ -124,7 +124,7 @@ If you're using anaconda/miniconda, and prefer to use conda environments rather 
 ```bash
 conda create -n swiss
 source activate swiss
-pip install https://portaldev.sph.umich.edu/swiss/swiss-1.0b1.tar.gz
+pip install git+https://github.com/welchr/swiss.git@v1.0b1
 swiss --help
 ```
 
