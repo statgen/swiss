@@ -35,6 +35,7 @@ setup(
 
   scripts = [
     "bin/swiss",
+    "bin/swiss-create-data"
   ],
 
   classifiers = [

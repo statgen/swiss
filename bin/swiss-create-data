@@ -476,9 +476,9 @@ class MergeHistory:
       self.rsids[rsid_high] = node_high
       self.rsids[rsid_low] = node_low
 
-def create_db(vcf_path,db_path,rsmerge_path,snphistory_path,chunksize=500000):
+def create_db(vcf_path,db_path,rsmerge_path,snphistory_path,dbsnp_build,chunksize=500000):
   print("Parsing histories...")
-  history = MergeHistory(rsmerge_path,snphistory_path,DBSNP_BUILD)
+  history = MergeHistory(rsmerge_path,snphistory_path,dbsnp_build)
 
   print("Creating database...")
   con = sqlite3.connect(db_path)
@@ -560,6 +560,14 @@ def get_settings():
   p.add_option("--gwas-cat",help="Build a gwas catalog file.",action="store_true",default=False)
   p.add_option("--db",help="Database name or path to existing database.")
   p.add_option("--no-cleanup",help="Leave temporary files alone after creating database instead of deleting them.",default=False,action="store_true")
+  p.add_option("--genome-build",help="Specify human genome build to use when downloading data, e.g. GRCh37p13",default="GRCh37p13")
+  p.add_option("--dbsnp-build",help="Specify dbSNP build to use, e.g. b147",default="b147")
+
+  if not opts.dbsnp_build.startswith("b"):
+    raise ValueError("Unrecognized dbSNP build, must begin with 'b': " + opts.dbsnp_build)
+
+  if not opts.genome_build.startswith("GRCh"):
+    raise ValueError("Unrecognized human genome build, must begin with 'GRCh': " + opts.genome_build)
 
   opts, args = p.parse_args()
 
@@ -580,11 +588,11 @@ def main():
     print("Downloading rsID deletion history...")
     snphistory_path = download_snp_history()
 
-    print("Downloading NCBI dbSNP VCF for {} / {}".format(DBSNP_BUILD,GENOME_BUILD))
-    vcf_path = download_dbsnp_vcf(DBSNP_BUILD,GENOME_BUILD)
+    print("Downloading NCBI dbSNP VCF for {} / {}".format(opts.dbsnp_build,opts.genome_build))
+    vcf_path = download_dbsnp_vcf(opts.dbsnp_build,opts.genome_build)
 
     # Create sqlite database
-    create_db(vcf_path,db_name,rsmerge_path,snphistory_path)
+    create_db(vcf_path,db_name,rsmerge_path,snphistory_path,opts.dbsnp_build)
 
     # Write a file so we know when the database was created.
     db_info = opts.db + ".info"
@@ -596,6 +604,7 @@ def main():
     print("Skipping database creation, already exists: %s" % db_name,file=sys.stderr)
 
   # Should we also try to build a GWAS catalog?
+  # Currently EBI only releases GRCh38 datasets
   tmp_gwascat = "from_ebi_gwascatalog.txt"
   if opts.gwas_cat:
     # Download the catalog
@@ -604,7 +613,7 @@ def main():
 
     # Do some filtering and reformatting, and looking up positions for this genome build
     print("\nParsing/reformatting GWAS catalog..")
-    final_gwas_cat = "gwascat_ebi_%s.tab" % GENOME_BUILD
+    final_gwas_cat = "gwascat_ebi_%s.tab" % opts.genome_build
     parse_gwas_catalog(tmp_gwascat,db_name,final_gwas_cat)
 
     print("\nCreated GWAS catalog: %s" % final_gwas_cat)
