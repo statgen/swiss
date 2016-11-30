@@ -51,11 +51,9 @@ Both tabix and plink should be somewhere on your $PATH ideally, or alternatively
 
 The latest package tarballs are here:
 
-| Version | Date       | Data for LD          | Size | File                                                        |
-|---------|------------|----------------------|------|-------------------------------------------------------------|
-| 1.0b1   | 11/27/2016 | Yes                  | 1.9G | https://portaldev.sph.umich.edu/swiss/swiss-1.0b1.tar.gz    |
-
-This Github site will always contain the most recent source code, and will usually be slightly ahead of the binary/packaged versions listed above.
+| Version | Date       | File                                                        |
+|---------|------------|-------------------------------------------------------------|
+| 1.0b1   | 11/27/2016 | https://portaldev.sph.umich.edu/swiss/swiss-1.0b1.tar.gz    |
 
 ## Changes
 
