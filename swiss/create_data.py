@@ -26,6 +26,7 @@ from optparse import OptionParser
 from collections import namedtuple
 from six.moves.urllib.request import urlretrieve
 from itertools import chain
+from toolz.itertoolz import partition_all
 
 # Constants.
 SQLITE_SNP_POS = "dbsnp"

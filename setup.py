@@ -30,7 +30,8 @@ setup(
     "pyyaml",
     "appdirs",
     "tqdm",
-    "six"
+    "six",
+    "toolz"
   ],
 
   scripts = [
