@@ -72,6 +72,8 @@ New features:
 
 * New option --list-files will now show the current config file and data files in use
 
+* New option --download-data to automatically download/update when new supporting data (GWAS catalog, LD files, etc.) are available
+
 Backwards incompatible changes:
 
 * Swiss is installed now as a python package, instead of a standalone directory. Some files have shifted around in locations. Use --list-files to find installed locations.
