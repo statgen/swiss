@@ -25,6 +25,7 @@ from tqdm import tqdm
 from optparse import OptionParser
 from collections import namedtuple
 from six.moves.urllib.request import urlretrieve
+from six import itervalues
 from itertools import chain
 from toolz.itertoolz import partition_all
 
