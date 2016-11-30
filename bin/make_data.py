@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+from __future__ import print_function
+import os, time, sys
+sys.path.insert(0,"../")
+from swiss.main import PROG_VERSION
+from subprocess import Popen, PIPE, check_call
+
+def datafiles(dirpath):
+  for d, ds, fs in os.walk(dirpath):
+    if "genome" in d:
+      continue
+
+    for f in fs:
+      if f.endswith(".py") or f.endswith(".pyc"):
+        continue
+
+      if ".vcf.gz" in f and not f.startswith("trim"):
+        continue
+
+      if "fusion" in f:
+        continue
+
+      if "got2d" in f.lower():
+        continue
+
+      yield os.path.join(d,f)
+
+files = [f for f in datafiles("../data/")]
+tarball = "swiss_data_{version}.tar.gz".format(version=PROG_VERSION)
+cmd = "tar zcf {} --files-from -".format(tarball)
+
+print("Creating tarball: " + tarball)
+proc = Popen(cmd,stdin=PIPE,shell=True,universal_newlines=True)
+
+for f in files:
+  print("Adding {} to archive...".format(f))
+  print(f,file=proc.stdin)
+
+proc.stdin.close()
+
+proc.wait()
+
+# Make checksum
+print("Checksumming..")
+check_call("sha512sum {} > {}".format(tarball,tarball.replace(".tar.gz",".sha512")),shell=True,universal_newlines=True)
+
+# Make data version file
+# This allows the program to check if there have been data revisions
+with open(tarball.replace(".tar.gz",".version"),"wt") as fp:
+  print(int(time.time()),file=fp)
+
