@@ -51,9 +51,9 @@ Both tabix and plink should be somewhere on your $PATH ideally, or alternatively
 
 The latest package tarballs are here:
 
-| Version | Date       | File                                                        |
-|---------|------------|-------------------------------------------------------------|
-| 1.0b1   | 11/27/2016 | https://portaldev.sph.umich.edu/swiss/swiss-1.0b1.tar.gz    |
+| Version | Date       | Install                                                       |
+|---------|------------|---------------------------------------------------------------|
+| 1.0b1   | 11/27/2016 | `pip install git+https://github.com/welchr/swiss.git@v1.0b1`  |
 
 ## Changes
 
@@ -102,10 +102,10 @@ You can install directly from the tarball as a regular python package:
 
 ```bash
 # Install globally
-pip install https://portaldev.sph.umich.edu/swiss/swiss-1.0b1.tar.gz
+pip install git+https://github.com/welchr/swiss.git@v1.0b1
 
 # Install in ~/.local/ instead
-pip install --user https://portaldev.sph.umich.edu/swiss/swiss-1.0b1.tar.gz
+pip install --user git+https://github.com/welchr/swiss.git@v1.0b1
 ```
 
 If you don't have administrator privileges on your machine, you can install into your home directory by adding `--user`. This causes pip to install packages into `~/.local/lib/python2.7/site-packages/`, and binaries/scripts into `~/.local/bin/`. In this case, you will want to make sure `~/.local/bin/` is in your $PATH (`export PATH="/home/<user>/.local/bin:$PATH"`).
