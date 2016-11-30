@@ -294,7 +294,7 @@ class PlinkLDFinder():
 
       if (len(ref) + len(alt)) > 10000:
         trunc_id = "%s:%s_%s.../%s..." % (chrom,pos,ref[0:10],alt[0:10])
-        warn("variant alleles are too long for PLINK 1.9, skipping (truncated alleles to first 10 bp): %s" % trunc_id)
+        warning("variant alleles are too long for PLINK 1.9, skipping (truncated alleles to first 10 bp): %s" % trunc_id)
         continue
 
       # Write the variant out to plink1.9's STDIN.
