@@ -563,13 +563,13 @@ def get_settings():
   p.add_option("--genome-build",help="Specify human genome build to use when downloading data, e.g. GRCh37p13",default="GRCh37p13")
   p.add_option("--dbsnp-build",help="Specify dbSNP build to use, e.g. b147",default="b147")
 
+  opts, args = p.parse_args()
+
   if not opts.dbsnp_build.startswith("b"):
     raise ValueError("Unrecognized dbSNP build, must begin with 'b': " + opts.dbsnp_build)
 
   if not opts.genome_build.startswith("GRCh"):
     raise ValueError("Unrecognized human genome build, must begin with 'GRCh': " + opts.genome_build)
-
-  opts, args = p.parse_args()
 
   return opts, args
 
