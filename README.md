@@ -97,7 +97,7 @@ Backwards incompatible changes:
 
 ## Installation
 
-### Using python + pip
+### 1. Install swiss
 
 You can install directly from the tarball as a regular python package:
 
@@ -129,7 +129,7 @@ pip install git+https://github.com/welchr/swiss.git@v1.0b1
 swiss --help
 ```
 
-### Install required dependencies
+### 2. Install required dependencies
 
 Swiss requires these two programs to function:
 
@@ -140,7 +140,7 @@ Make sure both are installed and somewhere on your $PATH.
 
 Alternatively, you can create a user config (follow instructions by `swiss --list-files`) and use this to specify the paths to the plink and tabix binaries.
 
-### Download supporting data files (optional)
+### 3. Download supporting data files (optional)
 
 If you're planning to run swiss with your own GWAS catalog and LD files, you can skip this step. Otherwise, after installing (above), you can download all supporting data by doing:
 
