@@ -54,9 +54,16 @@ The latest package tarballs are here:
 
 | Version | Date       | Install                                                       |
 |---------|------------|---------------------------------------------------------------|
-| 1.0b1   | 11/27/2016 | `pip install git+https://github.com/welchr/swiss.git@v1.0b2`  |
+| 1.0b2   | 11/30/2016 | `pip install git+https://github.com/welchr/swiss.git@v1.0b2`  |
+| 1.0b1   | 11/27/2016 | `pip install git+https://github.com/welchr/swiss.git@v1.0b1`  |
 
 ## Changes
+
+1.0b2 - 11/30/2016
+
+New features: 
+
+* Script to create GWAS catalog without waiting for data releases `swiss-create-data` - see [Generate GWAS catalog](#generate-gwas-catalog) for more info
 
 1.0b1 - 11/27/2016
 
