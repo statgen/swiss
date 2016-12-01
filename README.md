@@ -20,6 +20,7 @@
   * [GWAS catalog lookups](#gwas-catalog-lookups)
   * [Output from Swiss](#output-from-swiss)
   * [Common command-lines used](#common-command-lines-used)
+* [Generate GWAS catalog](#generate-gwas-catalog)
 * [Options](#options)
 * [Limitations](#limitations)
 * [License](#license)
@@ -465,6 +466,40 @@ The command above will:
 * Filter variants on imputation quality 0.3
 * Clump results using distance of 500kb, and also remove variants with p > 5e-08
 * Use 1000G EUR to both LD clump AND find GWAS variants in LD with top signals
+
+## Generate GWAS catalog
+
+Instead of waiting for data releases from `swiss --download-data` (which
+contain a GWAS catalog from EBI), you can generate your own up to date
+catalog with the `swiss-create-data` script. 
+
+Note that this script downloads some rather large files from NCBI, in
+order to translate GWAS catalog variants into CHR/POS/REF/ALT. 
+
+The process takes roughly an hour or two depending on your internet
+connection. 
+
+To generate a new catalog: 
+
+```
+swiss-create-data --genome-build GRCh37p13 --dbsnp-build b147
+```
+
+This will create two files: 
+
+```
+-rw-r----- 1 user user  22G Nov 30 18:39 GRCh37p13_b147.sqlite
+-rw-r----- 1 user user 1.7M Nov 30 18:39 gwascat_ebi_GRCh37p13.tab
+```
+
+The first file is a SQLite database created from the downloaded NCBI
+dbSNP VCF. The second file is the processed GWAS catalog that can be
+used by swiss. 
+
+To use the catalog, you can either provide the path to it directly by
+using `--gwas-cat /path/to/gwascat_ebi_GRCh37p13.tab`, or you can modify
+the config file (see `swiss --list-files`) and add an entry for it
+there. 
 
 ## Options
 
