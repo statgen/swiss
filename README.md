@@ -54,9 +54,16 @@ The latest package tarballs are here:
 
 | Version | Date       | Install                                                       |
 |---------|------------|---------------------------------------------------------------|
+| 1.0b2   | 11/30/2016 | `pip install git+https://github.com/welchr/swiss.git@v1.0b2`  |
 | 1.0b1   | 11/27/2016 | `pip install git+https://github.com/welchr/swiss.git@v1.0b1`  |
 
 ## Changes
+
+1.0b2 - 11/30/2016
+
+New features: 
+
+* Script to create GWAS catalog without waiting for data releases `swiss-create-data` - see [Generate GWAS catalog](#generate-gwas-catalog) for more info
 
 1.0b1 - 11/27/2016
 
@@ -103,10 +110,10 @@ You can install directly from the tarball as a regular python package:
 
 ```bash
 # Install globally
-pip install git+https://github.com/welchr/swiss.git@v1.0b1
+pip install git+https://github.com/welchr/swiss.git@v1.0b2
 
 # Install in ~/.local/ instead
-pip install --user git+https://github.com/welchr/swiss.git@v1.0b1
+pip install --user git+https://github.com/welchr/swiss.git@v1.0b2
 ```
 
 If you don't have administrator privileges on your machine, you can install into your home directory by adding `--user`. This causes pip to install packages into `~/.local/lib/python2.7/site-packages/`, and binaries/scripts into `~/.local/bin/`. In this case, you will want to make sure `~/.local/bin/` is in your $PATH (`export PATH="/home/<user>/.local/bin:$PATH"`).
@@ -116,7 +123,7 @@ An alternative would be to install into a virtualenv, to keep swiss encapsulated
 ```bash
 virtualenv swiss
 source swiss/bin/activate
-pip install git+https://github.com/welchr/swiss.git@v1.0b1
+pip install git+https://github.com/welchr/swiss.git@v1.0b2
 swiss --help
 ```
 
@@ -125,7 +132,7 @@ If you're using anaconda/miniconda, and prefer to use conda environments rather 
 ```bash
 conda create -n swiss
 source activate swiss
-pip install git+https://github.com/welchr/swiss.git@v1.0b1
+pip install git+https://github.com/welchr/swiss.git@v1.0b2
 swiss --help
 ```
 
