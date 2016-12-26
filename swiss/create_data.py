@@ -18,7 +18,7 @@
 #===============================================================================
 
 from __future__ import print_function
-import os, sys, re, gzip, tempfile
+import os, sys, re, gzip, tempfile, io
 import math, time, traceback, sqlite3
 import os.path as path
 from tqdm import tqdm
@@ -238,10 +238,11 @@ class SwissDB:
 def parse_gwas_catalog(filepath,dbpath,outpath):
   swiss_db = SwissDB(dbpath)
 
-  with open(filepath) as f, open(outpath,'w') as out:
+  with io.open(filepath,"r",encoding="utf-8") as f, io.open(outpath,'w',encoding="utf-8") as out:
     f.readline() # header
 
-    print("\t".join("VARIANT EPACTS CHRPOS CHR POS REF ALT PHENO GROUP LOG_PVAL CITATION RISK_ALLELE RISK_AL_FREQ GENE_LABEL OR_BETA".split()),file=out)
+    new_header = u"\t".join("VARIANT EPACTS CHRPOS CHR POS REF ALT PHENO GROUP LOG_PVAL CITATION RISK_ALLELE RISK_AL_FREQ GENE_LABEL OR_BETA".split())
+    print(new_header,file=out)
 
     seen_trait_snps = set()
     for line in tqdm(f,unit="line"):
@@ -272,14 +273,14 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
         try:
           risk_al_freq = float(risk_al_freq)
         except:
-          print("Row with invalid risk allele frequency: trait {}, snps {}, freq was: {}".format(trait,rsids,risk_al_freq),file=sys.stderr)
+          print(u"Row with invalid risk allele frequency: trait {}, snps {}, freq was: {}".format(trait,rsids,risk_al_freq),file=sys.stderr)
           risk_al_freq = "NA"
 
       # Genes labeled for this region
-      genes = ",".join(map(str.strip,e[13].split(",")))
+      genes = ",".join(map(lambda x: x.strip(),e[13].split(",")))
 
       if "intergenic" in genes:
-        genes = ",".join(map(str.strip,e[14].split(",")))
+        genes = ",".join(map(lambda x: x.strip(),e[14].split(",")))
 
       # Is the GWAS p-value significant?
       try:
@@ -340,7 +341,8 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
         if or_beta_out != "NA": or_beta_out_s = "{:.2f}".format(or_beta_out)
         pos_s = str(pos)
         log_pval_s = "{:.2f}".format(log_pval)
-        print("\t".join([rsid,epacts,chrpos,chrom,pos_s,ref,alt,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out_s,genes,or_beta_out_s]),file=out)
+        final_row = u"\t".join([rsid,epacts,chrpos,chrom,pos_s,ref,alt,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out_s,genes,or_beta_out_s])
+        print(final_row,file=out)
 
   return outpath
 
