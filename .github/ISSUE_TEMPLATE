@@ -1,0 +1,33 @@
+#### Command-line used to cause the issue
+
+```
+swiss --assoc file.txt ...
+```
+
+#### Path to your data (if publicly available)
+
+http://path/to/your/data/
+
+#### Problem description
+
+Please describe the issue: 
+
+* What is the problem? 
+* Is it reproducible? 
+* What was the expected output? 
+
+#### Swiss version
+
+If you don't know your swiss version, please do: 
+
+```bash
+swiss -h | head
+```
+
+Or from python: 
+
+```python
+from swiss.main import PROG_VERSION
+PROG_VERSION
+```
+
