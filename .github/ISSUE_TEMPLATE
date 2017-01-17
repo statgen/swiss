@@ -21,13 +21,6 @@ Please describe the issue:
 If you don't know your swiss version, please do: 
 
 ```bash
-swiss -h | head
-```
-
-Or from python: 
-
-```python
-from swiss.main import PROG_VERSION
-PROG_VERSION
+swiss --version
 ```
 
