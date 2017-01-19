@@ -269,6 +269,15 @@ class PlinkLDFinder():
       stderr=PIPE
     )
 
+    def cleanup():
+      for ext in [".log",".nosex",".ld.gz","-temporary.bed","-temporary.bim","-temporary.fam"]:
+        delfile = tmpout + ext
+        try:
+          os.remove(delfile)
+          print "Deleted {}".format(delfile)
+        except:
+          print "Tried to delete {} but failed".format(delfile)
+
     # Loop over VCF lines, changing the ID to be a more descriptive EPACTS ID (chr:pos_ref/alt_id).
     for line in proc_tabix.stdout:
       if line.startswith("#"):
@@ -316,6 +325,9 @@ class PlinkLDFinder():
     ld_stdout, ld_stderr = proc_ld.communicate()
 
     if ld_stderr != '' or 'Error' in ld_stdout or proc_ld.returncode != 0:
+      if not SWISS_DEBUG:
+        cleanup()
+
       raise Exception, "\n" + ld_stdout + "\n\n" + ld_stderr
 
     # Return a data frame of LD statistics.
@@ -333,13 +345,8 @@ class PlinkLDFinder():
     df.rename(columns = lambda x: x.replace("BP","POS"),inplace=True)
     df.rename(columns = lambda x: x.replace("SNP","VARIANT"),inplace=True)
 
-    # Cleanup temporary files.
-    for ext in [".log",".nosex",".ld.gz","-temporary.bed","-temporary.bim","-temporary.fam"]:
-      delfile = tmpout + ext
-      try:
-        os.remove(delfile)
-      except:
-        pass
+    # Run cleanup
+    cleanup()
 
     # Slight modification for swiss: it expects return to be dictionary of variant --> (dprime,rsq)
     ld_data = dict(zip(df.VARIANT_B,df.apply(lambda x: tuple([x["DP"],x["R2"]]),axis=1)))
