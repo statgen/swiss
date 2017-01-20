@@ -294,9 +294,8 @@ class PlinkLDFinder():
         delfile = tmpout + ext
         try:
           os.remove(delfile)
-          print "Deleted {}".format(delfile)
         except:
-          print "Tried to delete {} but failed".format(delfile)
+          pass
 
     # Loop over VCF lines, changing the ID to be a more descriptive EPACTS ID (chr:pos_ref/alt_id).
     for line in proc_tabix.stdout:
@@ -358,7 +357,8 @@ class PlinkLDFinder():
     df.rename(columns = lambda x: x.replace("SNP","VARIANT"),inplace=True)
 
     # Run cleanup
-    cleanup()
+    if not SWISS_DEBUG:
+      cleanup()
 
     # Slight modification for swiss: it expects return to be dictionary of variant --> (dprime,rsq)
     ld_data = dict(zip(df.VARIANT_B,df.apply(lambda x: tuple([x["DP"],x["R2"]]),axis=1)))
