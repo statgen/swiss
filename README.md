@@ -71,7 +71,7 @@ Bug fixes:
 
 New features: 
 
-* Include 1000G phase 3 (hg19/GRCh37)
+* Include 1000G phase 3 (hg19/GRCh37) (re-run `swiss --download-data`)
 * Issue template for github
 
 1.0b3 - 12/26/2016
