@@ -14,7 +14,7 @@ def datafiles(dirpath):
       if f.endswith(".py") or f.endswith(".pyc"):
         continue
 
-      if ".vcf.gz" in f and not f.startswith("trim"):
+      if ".vcf.gz" in f and not (f.startswith("trim") or f.startswith("reduced")):
         continue
 
       if "fusion" in f:

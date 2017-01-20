@@ -63,6 +63,14 @@ The latest package tarballs are here:
 
 1.0b4 - 01/17/2016
 
+Bug fixes: 
+
+* Indels with very long alleles are now supported, previously they could
+  not be used for calculating LD due to allele length limitation in
+  PLINK
+
+New features: 
+
 * Include 1000G phase 3 (hg19/GRCh37)
 * Issue template for github
 
