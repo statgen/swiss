@@ -25,7 +25,7 @@ from hashlib import md5
 from LDRegionCache import *
 from textwrap import fill
 from utils import *
-from itertools import imap, chain, izip
+from itertools import imap, chain, izip, count
 from collections import defaultdict
 
 import os, sys, tempfile, pysam, json, optparse, gzip
@@ -120,6 +120,27 @@ class PlinkLDSettings:
     key_string = self.vcf_path
     key = hashlib.sha512(key_string).hexdigest()
     return key
+
+class VariantHash:
+  def __init__(self):
+    self.counter = count()
+    self.h_hash = dict()
+    self.h_variant = dict()
+
+  def hash(self,variant):
+    if variant in self.h_variant:
+      return self.h_variant.get(variant)
+    else:
+      h = "id{}".format(next(self.counter))
+      self.h_hash[h] = variant
+      self.h_variant[variant] = h
+      return h
+
+  def variant(self,hashh):
+    v = self.h_hash.get(hashh)
+    if v is None:
+      raise ValueError("Tried to unhash a variant that hadn't been hashed before: " + v)
+    return v
 
 class PlinkLDFinder():
   def __init__(self, plink_settings, cache=None, cleanup=True, verbose=False):
@@ -253,14 +274,13 @@ class PlinkLDFinder():
     proc_tabix = Popen(tabix_cmd,shell=True,stdout=PIPE,stderr=PIPE)
 
     # We need to hash variant names for now (PLINK limits length of string)
-    variant_hashes = dict()
-    refvariant_hash = md5(variant).hexdigest()
-    variant_hashes[refvariant_hash] = variant
+    hasher = VariantHash()
+    variant_hash = hasher.hash(variant)
 
     # Use plink1.9 to calculate LD - we'll feed it VCF lines directly to its STDIN.
     tmpout = tempfile.mktemp(dir=os.getcwd())
     plink_cmd = "{plink} --vcf /dev/fd/0 --r2 gz dprime with-freqs yes-really --ld-snp {0} --ld-window-kb 99999 --ld-window 99999 --threads 1 " \
-      "--ld-window-r2 {min_r2} --out {1}".format(refvariant_hash,tmpout,plink=self.settings.plink_path,min_r2=min_r2)
+      "--ld-window-r2 {min_r2} --out {1}".format(variant_hash,tmpout,plink=self.settings.plink_path,min_r2=min_r2)
     proc_ld = Popen(
       plink_cmd,
       shell=True,
@@ -304,19 +324,11 @@ class PlinkLDFinder():
       # else:
       #   new_id = "%s:%s_%s/%s" % (chrom,pos,ref,alt)
 
-      # Make an EPACTS ID for this variant, and set it to the ID column in the row.
+      # Make an EPACTS ID for this variant
       new_id = "%s:%s_%s/%s" % (chrom,pos,ref,alt)
 
       # We have to hash the variant name going to PLINK (it can't handle very long strings > a few thousand characters)
-      id_hash = md5(new_id).hexdigest()
-
-      # Check for collision
-      check = variant_hashes.get(id_hash)
-      if check is not None and check != new_id:
-        raise Exception("Variant hash collision detected for {} and {} - please raise an issue at github.com/welchr/swiss/issues/".format(check,new_id))
-
-      # Store the variant hash so we can reverse it afterwards
-      variant_hashes[id_hash] = new_id
+      id_hash = hasher.hash(new_id)
 
       # Write the variant out to plink1.9's STDIN.
       print >> proc_ld.stdin, "\t".join([chrom,pos,id_hash,ref,alt] + ls[5:])
@@ -337,8 +349,8 @@ class PlinkLDFinder():
     df = df[df.SNP_B != df.SNP_A]
 
     # Convert from variant hashes back to real variant IDs
-    df.loc[:,"SNP_A"] = df.loc[:,"SNP_A"].map(variant_hashes.get)
-    df.loc[:,"SNP_B"] = df.loc[:,"SNP_B"].map(variant_hashes.get)
+    df.loc[:,"SNP_A"] = df.loc[:,"SNP_A"].map(hasher.variant)
+    df.loc[:,"SNP_B"] = df.loc[:,"SNP_B"].map(hasher.variant)
 
     # Small changes to names.
     df.rename(columns = lambda x: x.replace("CHR","CHROM"),inplace=True)
