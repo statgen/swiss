@@ -563,6 +563,8 @@ def get_settings():
   p.add_option("--no-cleanup",help="Leave temporary files alone after creating database instead of deleting them.",default=False,action="store_true")
   p.add_option("--genome-build",help="Specify human genome build to use when downloading data, e.g. GRCh37p13",default="GRCh37p13")
   p.add_option("--dbsnp-build",help="Specify dbSNP build to use, e.g. b147",default="b147")
+  p.add_option("--rs-merge-arch",help="(optional) Specify already downloaded RsMergeArch file")
+  p.add_option("--snp-history",help="(optional) Specify already downloaded SNP history file")
 
   opts, args = p.parse_args()
 
@@ -574,6 +576,12 @@ def get_settings():
 
   if opts.db is None:
     opts.db = "{}_{}.sqlite".format(opts.genome_build,opts.dbsnp_build)
+
+  if opts.rs_merge_arch is not None and not os.path.isfile(opts.rs_merge_arch):
+    raise IOError("Can't find file: " + opts.rs_merge_arch)
+
+  if opts.snp_history is not None and not os.path.isfile(opts.snp_history):
+    raise IOError("Can't find file: " + opts.snp_history)
 
   return opts, args
 
@@ -589,11 +597,17 @@ def main():
 
   db_name = opts.db
   if not os.path.isfile(db_name):
-    print("Downloading rsID merge history...")
-    rsmerge_path = download_merge_arch()
+    if opts.rs_merge_arch is None:
+      print("Downloading rsID merge history...")
+      rsmerge_path = download_merge_arch()
+    else:
+      rsmerge_path = opts.rs_merge_arch
 
-    print("Downloading rsID deletion history...")
-    snphistory_path = download_snp_history()
+    if opts.snp_history is None:
+      print("Downloading rsID deletion history...")
+      snphistory_path = download_snp_history()
+    else:
+      snphistory_path = opts.snp_history
 
     vcf_url = NCBI_VCF_TEMPLATE_URL.format(opts.dbsnp_build,opts.genome_build)
     print("Downloading NCBI dbSNP VCF for {} / {} @ {}".format(opts.dbsnp_build,opts.genome_build,vcf_url))
