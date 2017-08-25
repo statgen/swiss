@@ -828,7 +828,9 @@ def run_process(assoc,trait,outprefix,opts):
 
     if not opts.skip_gwas:
       print "\nFinding clumped results in LD with GWAS catalog variants..."
-      print "\nLD source: %s" % opts.ld_gwas_source
+      print "- LD source: %s" % opts.ld_gwas_source
+      print "- LD threshold: %s (r2)" % opts.gwas_cat_ld
+      print "- LD max distance: {:,} (bp)".format(opts.gwas_cat_dist)
       gwas_ld, gwas_ld_failed_variants = gcat.variants_in_ld_multi(results_clumped,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist,opts.threads)
 
       if gwas_ld is not None:
@@ -842,6 +844,7 @@ def run_process(assoc,trait,outprefix,opts):
       else:
         print "\nNo GWAS hits were in LD with clumped variants."
 
+      print "\nFinding GWAS catalog variants within {:,} bp of clumped top hits...".format(opts.gwas_cat_dist)
       gwas_near = gcat.variants_nearby(results_clumped,opts.gwas_cat_dist)
 
       if gwas_near is not None:
@@ -881,7 +884,9 @@ def run_process(assoc,trait,outprefix,opts):
 
     if not opts.skip_gwas:
       print "\nFinding clumped results in LD with GWAS catalog variants..."
-      print "\nLD source: %s" % opts.ld_gwas_source
+      print "- LD source: %s" % opts.ld_gwas_source
+      print "- LD threshold: %s (r2)" % opts.gwas_cat_ld
+      print "- LD max distance: {:,} (bp)".format(opts.gwas_cat_dist)
       gwas_ld, gwas_ld_failed_variants = gcat.variants_in_ld_multi(results,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist,opts.threads)
 
       if gwas_ld is not None:
@@ -895,6 +900,7 @@ def run_process(assoc,trait,outprefix,opts):
       else:
         print "\nNo GWAS hits were in LD with clumped variants."
 
+      print "\nFinding GWAS catalog variants within {:,} bp of clumped top hits...".format(opts.gwas_cat_dist)
       gwas_near = gcat.variants_nearby(results,opts.gwas_cat_dist)
 
       if gwas_near is not None:
@@ -911,7 +917,9 @@ def run_process(assoc,trait,outprefix,opts):
   else:
     if not opts.skip_gwas:
       print "\nFinding results in LD with GWAS catalog variants..."
-      print "\nLD source: %s" % opts.ld_gwas_source
+      print "- LD source: %s" % opts.ld_gwas_source
+      print "- LD threshold: %s (r2)" % opts.gwas_cat_ld
+      print "- LD max distance: {:,} (bp)".format(opts.gwas_cat_dist)
       gwas_ld, gwas_ld_failed_variants = gcat.variants_in_ld_multi(results,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist,opts.threads)
 
       if gwas_ld is not None:
@@ -927,6 +935,7 @@ def run_process(assoc,trait,outprefix,opts):
       else:
         print "\nNo GWAS hits were in LD with clumped variants."
 
+      print "\nFinding GWAS catalog variants within {:,} bp of clumped top hits...".format(opts.gwas_cat_dist)
       gwas_near = gcat.variants_nearby(results,opts.gwas_cat_dist)
 
       if gwas_near is not None:
