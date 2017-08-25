@@ -47,7 +47,6 @@ def worker_ld_multi(args):
 
   if ld_ok:
     ld_snps = {j for j in finder.data.iterkeys()}
-    # TODO: fix this, merge won't work on CHRPOS
     cat_rows = gwascat[gwascat['EPACTS'].isin(ld_snps)]
 
     cat_rows['ASSOC_VARIANT'] = v.vid
