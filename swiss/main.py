@@ -797,7 +797,9 @@ def run_process(assoc,trait,outprefix,opts):
 
   if opts.ld_clump:
     print "\nLD clumping results.."
-    print "\nLD source: %s" % opts.ld_clump_source
+    print "- LD source: %s" % opts.ld_clump_source
+    print "- LD threshold: %s (r2)" % opts.clump_ld_thresh
+    print "- LD max distance: {:,} (bp)".format(opts.clump_ld_dist)
 
     clumper = LDClumper(results,finder_clumping)
     clump_results = clumper.ld_clump(opts.clump_ld_thresh,opts.clump_ld_dist)
