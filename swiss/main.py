@@ -856,6 +856,9 @@ def run_process(assoc,trait,outprefix,opts):
         print "\nNo GWAS hits discovered within %s of any clumped results." % BasePair(opts.gwas_cat_dist).as_kb()
 
   elif opts.dist_clump:
+    print "\nClumping results by distance.."
+    print "- Variants within {:,} bp of top hits will be removed iteratively".format(opts.clump_dist)
+
     dist_ok = results.dist_clump(opts.clump_p,opts.clump_dist)
 
     if dist_ok is None:
