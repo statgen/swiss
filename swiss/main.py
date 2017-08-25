@@ -543,6 +543,10 @@ def get_settings(arg_string=None):
 
   check_plink_version(opts.plink_path)
 
+  if SWISS_DEBUG:
+    print "PLINK path: " + opts.plink_path
+    print "Tabix path: " + opts.tabix_path
+
   out_exists = glob(os.path.join(opts.out,"*"))
   if len(out_exists) > 0:
     error("Output files already exist with this prefix: %s" % opts.out)
