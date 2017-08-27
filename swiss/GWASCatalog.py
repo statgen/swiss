@@ -46,6 +46,9 @@ def worker_ld_multi(args):
   ld_ok = finder.compute(v.epacts,v.chrom,v.pos - ld_dist,v.pos + ld_dist,ld_thresh)
 
   if ld_ok:
+    # In this case we also want to include the reference variant.
+    finder.data[v.epacts] = (1,1) # dprime,r2
+
     ld_snps = {j for j in finder.data.iterkeys()}
     cat_rows = gwascat[gwascat['EPACTS'].isin(ld_snps)]
 
