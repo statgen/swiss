@@ -51,8 +51,7 @@ from swiss.conf.reader import read_conf
 from swiss.conf.writer import write_conf
 
 PROG_NAME = "Swiss"
-PROG_VERSION = "1.0b4"
-PROG_DATE = "01/17/2017"
+PROG_VERSION = "1.0.0b4"
 PROG_AUTHOR = "Ryan Welch (welchr@umich.edu)"
 PROG_URL = "https://github.com/welchr/Swiss"
 DATA_URL = "https://portaldev.sph.umich.edu/swiss/swiss_data_{}.tar.gz".format(PROG_VERSION)
@@ -227,7 +226,7 @@ def get_conf(fpath=None):
   return config
 
 def print_program_header():
-  prog_string = "%s - %s (%s)" % (PROG_NAME,PROG_VERSION,PROG_DATE)
+  prog_string = "%s - %s" % (PROG_NAME,PROG_VERSION)
   max_length = max(map(len,[prog_string,PROG_AUTHOR,PROG_URL]))
   max_length += 4 # buffer
 
