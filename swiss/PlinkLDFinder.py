@@ -268,6 +268,18 @@ class PlinkLDFinder():
       ignore_indels: should we skip over indel variants in the VCF?
     """
 
+    print "VCF file being used for LD calculation is: " + vcf_file
+
+    from subprocess import check_output
+    print "Verifying gzip integrity... "
+    vcf_ok = check_output("gzip -t " + vcf_file,shell=True)
+    if len(vcf_ok) == 0:
+      print "OK"
+    else:
+      print vcf_ok
+
+    vcf_f = check_output("file " + vcf_file,shell=True)
+
     # Use tabix to pull out the region of interest from the VCF file.
     # plink1.9 does not have the ability to do this on its own.
     tabix_cmd = "{tabix} -h {0} {1}".format(vcf_file,region,tabix=self.settings.tabix_path)
@@ -298,7 +310,8 @@ class PlinkLDFinder():
           pass
 
     # Loop over VCF lines, changing the ID to be a more descriptive EPACTS ID (chr:pos_ref/alt_id).
-    for line in proc_tabix.stdout:
+    i_count_plink = 0
+    for i,line in enumerate(proc_tabix.stdout):
       if line.startswith("#"):
         proc_ld.stdin.write(line)
         continue
@@ -316,6 +329,9 @@ class PlinkLDFinder():
       if (len(ref) > 1 or len(alt) > 1) and ignore_indels:
         continue
 
+      if i < 5:
+        print ls[0:9]
+
       # If this variant already has an ID, we'll tack it on to the end of the EPACTS ID.
       # Skipping this - the "extra" part of the EPACTS ID was causing mismatches in other places...
       # if vid != ".":
@@ -331,6 +347,9 @@ class PlinkLDFinder():
 
       # Write the variant out to plink1.9's STDIN.
       print >> proc_ld.stdin, "\t".join([chrom,pos,id_hash,ref,alt] + ls[5:])
+      i_count_plink += 1
+
+    print "Wrote {} variants to PLINK, waiting for termination".format(i_count_plink)
 
     # Wait for plink to finish calculating LD.
     ld_stdout, ld_stderr = proc_ld.communicate()
