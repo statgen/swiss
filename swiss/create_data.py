@@ -249,21 +249,30 @@ class FilterLog:
   def __init__(self,limit=5):
     self.data = dict()
 
-  def add_example(self,error,example):
-    entry = self.data.setdefault(error,{})
+  def add_warning(self,warning,example):
+    root = self.data.setdefault("warning",{})
+    entry = root.setdefault(warning,{})
+
+    set_and_increment(entry,"count")
+    append_cap(entry,"examples",example)
+
+  def add_filter(self,ffilter,example):
+    root = self.data.setdefault("filter",{})
+    entry = root.setdefault(ffilter,{})
 
     set_and_increment(entry,"count")
     append_cap(entry,"examples",example)
 
   def summary(self):
-    for error, info in self.data.iteritems():
-      print("Warning: " + error)
-      print("\t"*1 + ".. occurred {:,} times".format(info["count"]))
-      print("\t"*1 + ".. examples: ")
-      for example in info["examples"]:
-        print("\t"*2 + example)
+    for dtype, root in self.data.iteritems():
+      for istring, info in root.iteritems():
+        print("{}: {}".format(dtype,istring))
+        print("\t"*1 + ".. occurred {:,} times".format(info["count"]))
+        print("\t"*1 + ".. examples: ")
+        for example in info["examples"]:
+          print("\t"*2 + example)
 
-      print("")
+        print("")
 
 def parse_gwas_catalog(filepath,dbpath,outpath):
   swiss_db = SwissDB(dbpath)
@@ -304,7 +313,7 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
         try:
           risk_al_freq = float(risk_al_freq)
         except:
-          print(u"Row with invalid risk allele frequency: trait {}, snps {}, freq was: {}".format(trait,rsids,risk_al_freq),file=sys.stderr)
+          log.add_warning("Invalid risk allele frequency",text_type("trait {}, snps {}, freq was: {}").format(trait,rsids,risk_al_freq))
           risk_al_freq = "NA"
 
       # Genes labeled for this region
@@ -317,15 +326,15 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
       try:
         log_pval = float(log_pval)
         if log_pval < GWAS_LOG_SIG:
-          log.add_example("Failed p-value threshold"," ".join(map(text_type,[rsids,trait,log_pval])))
+          log.add_filter("Failed p-value threshold"," ".join(map(text_type,[rsids,trait,log_pval])))
           continue
       except ValueError:
-        log.add_example("Invalid log p-value"," ".join(map(text_type,[rsids,trait,log_pval])))
+        log.add_filter("Invalid log p-value"," ".join(map(text_type,[rsids,trait,log_pval])))
         continue
 
       # Is the trait not blank?
       if trait.strip() == "":
-        log.add_example("Missing trait"," ".join(map(text_type,[rsids,trait,log_pval])))
+        log.add_filter("Missing trait"," ".join(map(text_type,[rsids,trait,log_pval])))
         continue
 
       # There can be multiple SNPs on the same line for the same trait.
@@ -343,7 +352,7 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
 
       for rsid in rsids:
         if not rsid.startswith("rs"):
-          log.add_example("Variant is not rsID",rsid)
+          log.add_filter("Variant is not rsID",rsid)
           continue
 
         # Find the position for this SNP.
@@ -351,7 +360,7 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
 
         # If it didn't have a chrom/pos in the database, we can't use it.
         if vrecord is None:
-          log.add_example("Couldn't find position/alleles for rsID",rsid)
+          log.add_filter("Couldn't find position/alleles for rsID",rsid)
           continue
 
         chrom, pos = vrecord.chrom, vrecord.pos
@@ -362,7 +371,7 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
         # If we've already seen this association, we don't need to print it.
         key = "%s_%s_%s_%s" % (rsid,chrom,pos,trait)
         if key in seen_trait_snps:
-          log.add_example("SNP already known for this trait",key)
+          log.add_filter("SNP already known for this trait",key)
           continue
         else:
           seen_trait_snps.add(key)
