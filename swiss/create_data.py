@@ -32,8 +32,8 @@ from toolz.itertoolz import partition_all
 # Constants.
 SQLITE_SNP_POS = "dbsnp"
 SQLITE_TRANS = "trans"
-SNP_HISTORY_URL = "ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606/database/organism_data/SNPHistory.bcp.gz"
-RS_MERGE_ARCH_URL = "ftp://ftp.ncbi.nih.gov/snp/database/organism_data/human_9606/RsMergeArch.bcp.gz"
+SNP_HISTORY_URL = "ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606/database/data/organism_data/SNPHistory.bcp.gz"
+RS_MERGE_ARCH_URL = "ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606/database/data/organism_data/RsMergeArch.bcp.gz"
 NCBI_VCF_TEMPLATE_URL = "ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_{0}_{1}/VCF/00-All.vcf.gz"
 GWAS_CAT_EBI_URL = "http://www.ebi.ac.uk/gwas/api/search/downloads/full"
 GWAS_LOG_SIG = -math.log10(5e-08)
