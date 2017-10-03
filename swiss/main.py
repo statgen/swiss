@@ -781,7 +781,7 @@ def run_process(assoc,trait,outprefix,opts):
   if opts.do_overlap_check:
     print "\nIdentifying GWAS catalog variants that do not overlap with your --ld-gwas-source: %s" % opts.ld_gwas_source
     missing_vcf = gcat.variants_missing_vcf(opts.ld_gwas_source_file)
-    missing_vcf.sort('PHENO',inplace=True)
+    missing_vcf.sort_values('PHENO',inplace=True)
     missing_vcf = sort_genome(missing_vcf,'CHR','POS')
     print colored('Warning: ','yellow') + "the following variants in the GWAS catalog are not present in your VCF file: "
     print missing_vcf["VARIANT EPACTS CHR POS PHENO GROUP".split()].to_string(index=False)

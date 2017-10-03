@@ -258,7 +258,7 @@ class AssocResults:
     # ...
 
     self.data = self.data[self.data[self.pval_col] < p_thresh]
-    self.data = self.data.sort(self.pval_col)
+    self.data = self.data.sort_values(self.pval_col)
 
     self.data['drop_row'] = False
     begin_cols = [self.epacts_col, self.pval_col, self.chrom_col, self.pos_col, 'drop_row']
