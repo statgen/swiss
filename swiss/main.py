@@ -51,7 +51,7 @@ from swiss.conf.reader import read_conf
 from swiss.conf.writer import write_conf
 
 PROG_NAME = "Swiss"
-PROG_VERSION = "1.0.0b5.dev1"
+PROG_VERSION = "1.0.0b5"
 PROG_AUTHOR = "Ryan Welch (welchr@umich.edu)"
 PROG_URL = "https://github.com/welchr/Swiss"
 DATA_URL = "https://portaldev.sph.umich.edu/swiss/swiss_data_{}.tar.gz".format(PROG_VERSION)
