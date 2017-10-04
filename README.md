@@ -64,7 +64,7 @@ Slight change in versioning scheme to more closely follow semver.
 
 Bug fixes:
 
-* Previously swiss would not include the top independent variants themselves when looking for LD buddies that exist in the GWAS catalog. These would only have been picked up in the `near-gwas` scan and not the `ld-gwas` scan. Now they will correctly appear in both places. (GH #6)
+* Previously swiss would not include the top independent variants themselves when looking for LD buddies that exist in the GWAS catalog. These would only have been picked up in the `near-gwas` scan and not the `ld-gwas` scan. Now they will correctly appear in both places. (GH [#6](../../issues/6))
 * Deprecation of `pandas.DataFrame.sort` -> `sort_values`
 * Updated NCBI URLs for swiss-create-data (thank you Daniele Di Domizio)
 
