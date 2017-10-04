@@ -52,14 +52,29 @@ Both tabix and plink should be somewhere on your $PATH ideally, or alternatively
 
 The latest package tarballs are here:
 
-| Version | Date       | Install                                                       |
-|---------|------------|---------------------------------------------------------------|
-| 1.0b4   | 01/17/2017 | `pip install git+https://github.com/welchr/swiss.git@v1.0b4`  |
-| 1.0b3   | 12/26/2016 | `pip install git+https://github.com/welchr/swiss.git@v1.0b3`  |
-| 1.0b2   | 11/30/2016 | `pip install git+https://github.com/welchr/swiss.git@v1.0b2`  |
-| 1.0b1   | 11/27/2016 | `pip install git+https://github.com/welchr/swiss.git@v1.0b1`  |
+| Version | Date       | Install                                                         |
+|---------|------------|-----------------------------------------------------------------|
+| 1.0.0b5 | 10/03/2017 | `pip install git+https://github.com/welchr/swiss.git@v1.0.0b5`  |
 
 ## Changes
+
+1.0.0b5 - 10/03/2017
+
+Slight change in versioning scheme to more closely follow semver.
+
+Bug fixes:
+
+* Previously swiss would not include the top independent variants themselves when looking for LD buddies that exist in the GWAS catalog. These would only have been picked up in the `near-gwas` scan and not the `ld-gwas` scan. Now they will correctly appear in both places. (GH #6)
+* Deprecation of `pandas.DataFrame.sort` -> `sort_values`
+* Updated NCBI URLs for swiss-create-data (thank you Daniele Di Domizio)
+
+New features:
+
+* Better accounting/printing of what is happening during GWAS catalog
+  parsing
+* Allow using existing SNP history and RsMergeArch when using
+  swiss-create-data
+* Better display of LD (and distance) clumping settings currently in use
 
 1.0b4 - 01/17/2016
 
