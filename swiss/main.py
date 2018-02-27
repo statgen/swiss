@@ -329,7 +329,8 @@ def get_settings(arg_string=None):
   parser.add_option("--dist-clump",help="Clump association results by distance.",action="store_true",default=False)
   parser.add_option("--clump-dist",help="Distance threshold to use for clumping based on distance.",default=2.5e5,type="int")
 
-  # LD source (GoT2D, 1000G, etc.) 
+  # LD source (GoT2D, 1000G, etc.)
+  parser.add_option("--plink-args",help="Arguments to pass on to PLINK. Must be quoted or the shell will expand them and they will be lost.")
   parser.add_option("--ld-clump-source",help="Name of pre-configured LD source, or a VCF file from which to compute LD.",default="1000G_2012-03_EUR")
   parser.add_option("--list-ld-sources",help="Print a list of available LD sources for each genome build.",default=False,action="store_true")
 
@@ -769,11 +770,11 @@ def run_process(assoc,trait,outprefix,opts):
 
   # LD finder for clumping
   vset = PlinkLDSettings(opts.ld_clump_source_file,opts.tabix_path,opts.plink_path)
-  finder_clumping = PlinkLDFinder(vset,verbose=False,cache=None)
+  finder_clumping = PlinkLDFinder(vset,verbose=False,cache=None,plink_args=opts.plink_args)
 
   # LD finder for GWAS catalog lookups
   vset_gwas = PlinkLDSettings(opts.ld_gwas_source_file,opts.tabix_path,opts.plink_path)
-  finder_gwas = PlinkLDFinder(vset_gwas,verbose=False,cache=None)
+  finder_gwas = PlinkLDFinder(vset_gwas,verbose=False,cache=None,plink_args=opts.plink_args)
 
   # GWAS catalog.
   gcat = GWASCatalog(opts.gwas_cat_file)

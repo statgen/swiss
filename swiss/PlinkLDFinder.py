@@ -143,7 +143,7 @@ class VariantHash:
     return v
 
 class PlinkLDFinder():
-  def __init__(self, plink_settings, cache=None, cleanup=True, verbose=False):
+  def __init__(self, plink_settings,cache=None,cleanup=True,verbose=False,plink_args=None):
     if not isinstance(plink_settings, PlinkLDSettings):
       raise ValueError
 
@@ -157,6 +157,7 @@ class PlinkLDFinder():
     self.cache = cache
     self.cleanup = cleanup
     self.verbose = verbose
+    self.plink_args = plink_args
 
     self.calc_ok = True
 
@@ -279,8 +280,9 @@ class PlinkLDFinder():
 
     # Use plink1.9 to calculate LD - we'll feed it VCF lines directly to its STDIN.
     tmpout = tempfile.mktemp(dir=os.getcwd())
+    extra_args = self.plink_args if self.plink_args is not None else ""
     plink_cmd = "{plink} --vcf /dev/fd/0 --r2 gz dprime with-freqs yes-really --ld-snp {0} --ld-window-kb 99999 --ld-window 99999 --threads 1 " \
-      "--ld-window-r2 {min_r2} --out {1}".format(variant_hash,tmpout,plink=self.settings.plink_path,min_r2=min_r2)
+      "--ld-window-r2 {min_r2} {extra_args} --out {1}".format(variant_hash,tmpout,plink=self.settings.plink_path,min_r2=min_r2,extra_args=extra_args)
     proc_ld = Popen(
       plink_cmd,
       shell=True,
