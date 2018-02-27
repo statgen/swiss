@@ -282,12 +282,12 @@ def check_plink_version(plink_path):
   from subprocess import check_output
 
   version_string = check_output("{} --version".format(plink_path),shell=True).strip()
-  x, y, beta, z = re.search("v(\d+)\.(\d+)b?(\d+)?\.(\w+)",version_string).groups()
+  v = re.search("v?(?P<major>\d+)\.?(?P<minor>\d+)?\.?(?P<patch>\d+)?b?(?P<beta>\d+)?\.?(dev)?(?P<dev>\d+)?",version_string).groupdict()
 
-  if int(x) >= 2:
+  if int(v["major"]) >= 2:
     return True
 
-  if int(x) >= 1 and int(y) > 9:
+  if int(v["major"]) >= 1 and int(v["minor"]) > 9:
     return True
 
   return False
