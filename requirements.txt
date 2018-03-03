@@ -1,0 +1,12 @@
+appdirs==1.4.3
+bx-python==0.7.3
+numpy==1.14.0
+pandas==0.22.0
+pysam==0.13
+python-dateutil==2.6.1
+pytz==2017.3
+PyYAML==3.12
+six==1.11.0
+termcolor==1.1.0
+toolz==0.9.0
+tqdm==4.19.5

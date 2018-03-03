@@ -22,17 +22,7 @@ setup(
 
   long_description = open("README.md").read(),
 
-  install_requires = [
-    "termcolor",
-    "pandas",
-    "pysam",
-    "bx-python",
-    "pyyaml",
-    "appdirs",
-    "tqdm",
-    "six",
-    "toolz"
-  ],
+  install_requires = open("requirements.txt").read().split(),
 
   scripts = [
     "bin/swiss",
