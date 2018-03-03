@@ -54,9 +54,15 @@ The latest package tarballs are here:
 
 | Version | Date       | Install                                                         |
 |---------|------------|-----------------------------------------------------------------|
-| 1.0.0b6 | 03/03/2018 | `pip install git+https://github.com/welchr/swiss.git@v1.0.0b6`  |
+| 1.0.0b7 | 03/03/2018 | `pip install git+https://github.com/welchr/swiss.git@v1.0.0b7`  |
 
 ## Changes
+
+1.0.0b7 - 03/03/2018
+
+Bug fixes:
+
+* Fix issue when installing latest version of bx-python requiring python-lzo which does not install nicely. There is now a requirements.txt with versions pinned.
 
 1.0.0b6 - 03/03/2018
 

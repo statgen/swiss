@@ -4,7 +4,7 @@ import os
 
 setup(
   name = "swiss",
-  version = "1.0.0b6",
+  version = "1.0.0b7",
   author = "Ryan Welch",
   author_email = "welchr@umich.edu",
 
