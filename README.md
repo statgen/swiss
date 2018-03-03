@@ -54,9 +54,19 @@ The latest package tarballs are here:
 
 | Version | Date       | Install                                                         |
 |---------|------------|-----------------------------------------------------------------|
-| 1.0.0b5 | 10/03/2017 | `pip install git+https://github.com/welchr/swiss.git@v1.0.0b5`  |
+| 1.0.0b6 | 03/03/2018 | `pip install git+https://github.com/welchr/swiss.git@v1.0.0b6`  |
 
 ## Changes
+
+1.0.0b6 - 03/03/2018
+
+Bug fixes:
+
+* Fix PLINK version detection
+
+New features:
+
+* Allow passing arguments through to PLINK, use `--plink-args`. For example: `--plink-args '--double-id --vcf-half-call missing'`. You must quote the arguments to be passed through or the shell will expand them.
 
 1.0.0b5 - 10/03/2017
 
@@ -78,26 +88,26 @@ New features:
 
 1.0b4 - 01/17/2016
 
-Bug fixes: 
+Bug fixes:
 
 * Indels with very long alleles are now supported, previously they could
   not be used for calculating LD due to allele length limitation in
   PLINK
 
-New features: 
+New features:
 
 * Include 1000G phase 3 (hg19/GRCh37) (re-run `swiss --download-data`)
 * Issue template for github
 
 1.0b3 - 12/26/2016
 
-Bug fixes: 
+Bug fixes:
 
-* Unicode error when parsing catalog 
+* Unicode error when parsing catalog
 
 1.0b2 - 11/30/2016
 
-New features: 
+New features:
 
 * Script to create GWAS catalog without waiting for data releases `swiss-create-data` - see [Generate GWAS catalog](#generate-gwas-catalog) for more info
 
