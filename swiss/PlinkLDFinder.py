@@ -311,7 +311,7 @@ class PlinkLDFinder():
       chrom, pos, vid, ref, alt, qual, filt = ls[0:7]
 
       # If this variant isn't marked as PASS, we shouldn't consider it.
-      if not ignore_filter and filt != "PASS":
+      if not ignore_filter and "PASS" not in filt:
         continue
 
       # Skip indel?
