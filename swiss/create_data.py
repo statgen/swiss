@@ -24,7 +24,7 @@ import os.path as path
 from tqdm import tqdm
 from optparse import OptionParser
 from collections import namedtuple
-from six.moves.urllib.request import urlretrieve
+from six.moves.urllib.request import urlretrieve, urlcleanup
 from six import itervalues, text_type
 from itertools import chain
 from toolz.itertoolz import partition_all
@@ -32,8 +32,8 @@ from toolz.itertoolz import partition_all
 # Constants.
 SQLITE_SNP_POS = "dbsnp"
 SQLITE_TRANS = "trans"
-SNP_HISTORY_URL = "ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606/database/data/organism_data/SNPHistory.bcp.gz"
-RS_MERGE_ARCH_URL = "ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606/database/data/organism_data/RsMergeArch.bcp.gz"
+SNP_HISTORY_URL = "ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606/database/organism_data/SNPHistory.bcp.gz"
+RS_MERGE_ARCH_URL = "ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606/database/organism_data/RsMergeArch.bcp.gz"
 NCBI_VCF_TEMPLATE_URL = "ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_{0}_{1}/VCF/00-All.vcf.gz"
 GWAS_CAT_EBI_URL = "http://www.ebi.ac.uk/gwas/api/search/downloads/full"
 GWAS_LOG_SIG = -math.log10(5e-08)
@@ -76,18 +76,21 @@ def remove_file(filepath):
 
 def download_ebi_catalog(url,outpath):
   with tqdm(unit='B',unit_scale=True,miniters=1,desc=url.split('/')[-1]) as t:
+    urlcleanup()
     urlretrieve(url,filename=outpath,reporthook=tqdm_hook(t),data=None)
 
   return outpath
 
 def download_merge_arch(url=RS_MERGE_ARCH_URL,outpath="RsMergeArch.bcp.gz"):
   with tqdm(unit='B',unit_scale=True,miniters=1,desc=url.split('/')[-1]) as t:
+    urlcleanup()
     urlretrieve(url,filename=outpath,reporthook=tqdm_hook(t),data=None)
 
   return outpath
 
 def download_snp_history(url=SNP_HISTORY_URL,outpath="SNPHistory.bcp.gz"):
   with tqdm(unit='B',unit_scale=True,miniters=1,desc=url.split('/')[-1]) as t:
+    urlcleanup()
     urlretrieve(url,filename=outpath,reporthook=tqdm_hook(t),data=None)
 
   return outpath
@@ -122,6 +125,7 @@ def download_dbsnp_vcf(dbsnp_build=None,genome_build=None,url=None,outpath=None)
       outpath = "human_9606_{}_{}_All.vcf.gz".format(dbsnp_build,genome_build)
 
   with tqdm(unit='B',unit_scale=True,miniters=1,desc=url.split('/')[-1]) as t:
+    urlcleanup()
     urlretrieve(url,filename=outpath,reporthook=tqdm_hook(t),data=None)
 
   return outpath
