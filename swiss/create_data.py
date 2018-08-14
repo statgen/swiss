@@ -318,7 +318,7 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
           risk_al_freq = float(risk_al_freq)
         except:
           log.add_warning("Invalid risk allele frequency",text_type("trait {}, snps {}, freq was: {}").format(trait,rsids,risk_al_freq))
-          risk_al_freq = "NA"
+          risk_al_freq = float("nan")
 
       # Genes labeled for this region
       genes = ",".join(map(lambda x: x.strip(),e[13].split(",")))
@@ -380,16 +380,19 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
         else:
           seen_trait_snps.add(key)
 
-        # Is this the SNP for which we have a risk allele? 
-        risk_al_out = risk_allele if rsid == strongest_snp else "NA"
-        risk_frq_out = risk_al_freq if rsid == strongest_snp else "NA"
-        or_beta_out = or_beta if rsid == strongest_snp else "NA"
+        # Is this the SNP for which we have a risk allele?
+        if rsid == strongest_snp:
+          risk_al_out = risk_allele
+          risk_frq_out = "{:.2f}".format(risk_al_freq) if not math.isnan(risk_al_freq) else "NA"
+          or_beta_out = "{:.2f}".format(or_beta) if not math.isnan(or_beta) else "NA"
+        else:
+          risk_al_out = "NA"
+          risk_frq_out = "NA"
+          or_beta_out = "NA"
 
-        if risk_frq_out != "NA": risk_frq_out_s = "{:.2f}".format(risk_frq_out)
-        if or_beta_out != "NA": or_beta_out_s = "{:.2f}".format(or_beta_out)
         pos_s = str(pos)
         log_pval_s = "{:.2f}".format(log_pval)
-        final_row = u"\t".join([rsid,epacts,chrpos,chrom,pos_s,ref,alt,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out_s,genes,or_beta_out_s])
+        final_row = u"\t".join([rsid,epacts,chrpos,chrom,pos_s,ref,alt,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out,genes,or_beta_out])
         print(final_row,file=out)
 
   print("")
