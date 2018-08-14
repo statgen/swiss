@@ -370,6 +370,7 @@ def get_settings(arg_string=None):
 
   if opts.list_files:
     print "Configuration file was found at: " + conf["config_path"]
+    print "The default config file shipped with swiss can be found at: " + os.path.join(swiss.conf.__path__[0],"default.yaml")
     print "The config file can be overridden by copying the default.yaml file to " + get_user_config_path()
     print "The swiss data directory is: " + data_dir
     sys.exit(0)
