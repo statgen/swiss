@@ -4,15 +4,17 @@ tabix_path: "tabix"
 # See: https://www.cog-genomics.org/plink2
 plink_path: "plink"
 
-# Location in which swiss should look for data files (gwas catalog, LD, etc.) 
+# Location in which swiss should look for data files (gwas catalog, LD, etc.)
 # If the value is null, then we default to using the typical user data directory
-# for your platform. On Linux, this is typically ~/.local/share/swiss/ and on macOS 
-# it would be ~/Library/Application Support/swiss/. 
+# for your platform. On Linux, this is typically ~/.local/share/swiss/ and on macOS
+# it would be ~/Library/Application Support/swiss/.
 data_dir: null
 
 gwas_catalogs:
   hg19:
     ebi: "data/gwascat/gwascat_ebi_GRCh37p13.tab"
+  hg38:
+    ebi: "data/gwascat/gwascat_ebi_GRCh38p7.tab"
 
 ld_sources:
   hg19:
@@ -20,10 +22,18 @@ ld_sources:
     1000G_2012-03_AFR: "data/ld/trim_phase1_release_v3.20101123.snps.genotypes.AFR.vcf.gz"
     1000G_2012-03_AMR: "data/ld/trim_phase1_release_v3.20101123.snps.genotypes.AMR.vcf.gz"
     1000G_2012-03_ASN: "data/ld/trim_phase1_release_v3.20101123.snps.genotypes.ASN.vcf.gz"
-    
+
     1000G_2014-11_ALL: "data/ld/reduced.ALL.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.ALL.vcf.gz"
     1000G_2014-11_ASN: "data/ld/reduced.ALL.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.ASN.vcf.gz"
     1000G_2014-11_EUR: "data/ld/reduced.ALL.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.EUR.vcf.gz"
     1000G_2014-11_FIN: "data/ld/reduced.ALL.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.FIN.vcf.gz"
     1000G_2014-11_AMR: "data/ld/reduced.ALL.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.AMR.vcf.gz"
     1000G_2014-11_AFR: "data/ld/reduced.ALL.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.AFR.vcf.gz"
+
+  hg38:
+    1000G_2014-11_AFR: "data/ld/1000g.phase3.hg38.AFR.shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+    1000G_2014-11_ALL: "data/ld/1000g.phase3.hg38.ALL.shapeit2_mvncall_integrated_v3plus_nounphased.rsID.genotypes.GRCh38_dbSNP_no_SVs.vcf.gz"
+    1000G_2014-11_AMR: "data/ld/1000g.phase3.hg38.AMR.shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+    1000G_2014-11_EAS: "data/ld/1000g.phase3.hg38.EAS.shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+    1000G_2014-11_EUR: "data/ld/1000g.phase3.hg38.EUR.shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+    1000G_2014-11_SAS: "data/ld/1000g.phase3.hg38.SAS.shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
