@@ -799,6 +799,7 @@ def run_process(assoc,trait,outprefix,opts):
   if opts.ld_clump:
     print "\nLD clumping results.."
     print "- LD source: %s" % opts.ld_clump_source
+    print "- LD source file: %s" % opts.ld_clump_source_file
     print "- LD threshold: %s (r2)" % opts.clump_ld_thresh
     print "- LD max distance: {:,} (bp)".format(opts.clump_ld_dist)
 
@@ -830,6 +831,7 @@ def run_process(assoc,trait,outprefix,opts):
     if not opts.skip_gwas:
       print "\nFinding clumped results in LD with GWAS catalog variants..."
       print "- LD source: %s" % opts.ld_gwas_source
+      print "- LD source file: %s" % opts.ld_gwas_source_file
       print "- LD threshold: %s (r2)" % opts.gwas_cat_ld
       print "- LD max distance: {:,} (bp)".format(opts.gwas_cat_dist)
       gwas_ld, gwas_ld_failed_variants = gcat.variants_in_ld_multi(results_clumped,finder_gwas,opts.gwas_cat_ld,opts.gwas_cat_dist,opts.threads)
