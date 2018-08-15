@@ -79,6 +79,23 @@ def filter_imp_quality(dframe,rsq_col,threshold=0.3):
 
   return dframe
 
+def nskip_double_pound(fpath):
+  if fpath.endswith(".gz"):
+    fp = gzip.open(fpath,"rt")
+  else:
+    fp = open(fpath)
+
+  count = 0
+  with fp:
+    for line in fp:
+      if line.startswith("##"):
+        count += 1
+        continue
+      else:
+        break
+
+  return count
+
 class AssocResults:
   def __init__(self,filepath=None,trait=None,df=None,pval_thresh=None,rsq_filter=None,query=None):
     """
@@ -128,7 +145,11 @@ class AssocResults:
       if self.rsq_col in header:
         dtypes[self.rsq_col] = pd.np.float32
 
-      df_iter = pd.read_table(self.filepath,na_values=["NA","None","."],iterator=True,chunksize=LOAD_CHUNKSIZE,dtype=dtypes,*args,**kwargs);
+      # Pandas can't skip rows automatically if comments are denoted by > 1 character
+      # So we need to skip them manually...
+      skip_count = nskip_double_pound(self.filepath)
+
+      df_iter = pd.read_table(self.filepath,na_values=["NA","None","."],iterator=True,chunksize=LOAD_CHUNKSIZE,skiprows=skip_count,dtype=dtypes,*args,**kwargs);
 
       chunks = []
       for chunk in df_iter:
