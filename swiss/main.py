@@ -331,12 +331,12 @@ def get_settings(arg_string=None):
 
   # LD source (GoT2D, 1000G, etc.)
   parser.add_option("--plink-args",help="Arguments to pass on to PLINK. Must be quoted or the shell will expand them and they will be lost.")
-  parser.add_option("--ld-clump-source",help="Name of pre-configured LD source, or a VCF file from which to compute LD.",default="1000G_2012-03_EUR")
+  parser.add_option("--ld-clump-source",help="Name of pre-configured LD source, or a VCF file from which to compute LD.",default="1000G_2014-11_EUR")
   parser.add_option("--list-ld-sources",help="Print a list of available LD sources for each genome build.",default=False,action="store_true")
 
   # GWAS catalog
   parser.add_option("--gwas-cat",help="GWAS catalog to use.",default="ebi")
-  parser.add_option("--ld-gwas-source",help="Name of pre-configured LD source or VCF file to use when calculating LD with GWAS variants.",default="1000G_2012-03_EUR")
+  parser.add_option("--ld-gwas-source",help="Name of pre-configured LD source or VCF file to use when calculating LD with GWAS variants.",default="1000G_2014-11_EUR")
   parser.add_option("--list-gwas-cats",action="store_true",default=False,help="Give a listing of all valid GWAS catalogs and their descriptions.")
   parser.add_option("--list-gwas-traits",action="store_true",default=False,help="List all of the available traits in a selected GWAS catalog.")
   parser.add_option("--list-gwas-trait-groups",action="store_true",default=False,help="List all of the available groupings of traits in a selected GWAS catalog.")
