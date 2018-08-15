@@ -18,11 +18,6 @@ gwas_catalogs:
 
 ld_sources:
   hg19:
-    1000G_2012-03_EUR: "data/ld/trim_phase1_release_v3.20101123.snps.genotypes.EUR.vcf.gz"
-    1000G_2012-03_AFR: "data/ld/trim_phase1_release_v3.20101123.snps.genotypes.AFR.vcf.gz"
-    1000G_2012-03_AMR: "data/ld/trim_phase1_release_v3.20101123.snps.genotypes.AMR.vcf.gz"
-    1000G_2012-03_ASN: "data/ld/trim_phase1_release_v3.20101123.snps.genotypes.ASN.vcf.gz"
-
     1000G_2014-11_ALL: "data/ld/reduced.ALL.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.ALL.vcf.gz"
     1000G_2014-11_ASN: "data/ld/reduced.ALL.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.ASN.vcf.gz"
     1000G_2014-11_EUR: "data/ld/reduced.ALL.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.EUR.vcf.gz"
