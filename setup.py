@@ -1,6 +1,4 @@
-from distutils.core import setup
-from glob import glob
-import os
+from setuptools import setup
 
 setup(
   name = "swiss",
