@@ -28,6 +28,7 @@ import difflib
 import pandas as pd
 import appdirs
 import tarfile
+import errno
 from six.moves.urllib_parse import urlparse
 from six.moves.urllib.request import urlopen
 from six.moves.urllib.request import urlretrieve
@@ -103,10 +104,12 @@ def download_swiss_data(data_dir):
     try:
       os.makedirs(data_dir)
       print "Created data directory: " + data_dir
-    except FileExistsError:
-      pass
-    except PermissionError:
-      error("Unable to create swiss data directory due to insufficient permissions: " + data_dir)
+    except OSError as e:
+      if e.errno == errno.EACCES:
+        error("Unable to create swiss data directory due to insufficient permissions: " + data_dir)
+      elif e.errno == errno.EEXIST:
+        # It's fine if the directory already exists.
+        pass
 
   # Needed filenames/paths
   data_pkg = p.basename(urlparse(DATA_URL).path)
