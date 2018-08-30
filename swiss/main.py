@@ -29,6 +29,8 @@ import pandas as pd
 import appdirs
 import tarfile
 import errno
+import ssl
+import requests
 from six.moves.urllib_parse import urlparse
 from six.moves.urllib.request import urlopen
 from six.moves.urllib.request import urlretrieve
@@ -96,6 +98,20 @@ def tqdm_hook(t):
 
   return inner
 
+def download_file(url, filepath, chunksize=1024):
+  with requests.get(url, stream=True) as r, open(filepath, "wb") as fp:
+    size = int(r.headers["Content-Length"])
+    total = int(size / chunksize)
+    tqiter = tqdm(
+        r.iter_content(chunk_size=chunksize),
+        total=total,
+        unit="KB",
+        desc=filepath,
+        leave=True
+    )
+    for chunk in tqiter:
+      fp.write(chunk)
+
 def download_swiss_data(data_dir):
   import os.path as p
 
@@ -123,10 +139,9 @@ def download_swiss_data(data_dir):
 
   # We won't bother updating/downloading the data if the data version matches
   try:
-    resp = urlopen(version_url)
-    remote_version = int(resp.read().strip())
+    remote_version = int(requests.get(version_url).content.strip())
   except:
-    error("Failed to download data version from " + version_url)
+    raise
 
   if p.isfile(vfile):
     with open(vfile,"rt") as fp:
@@ -141,11 +156,8 @@ def download_swiss_data(data_dir):
     print "Downloading data for swiss..."
 
   # Looks like we need to download the data.
-  with tqdm(unit='B',unit_scale=True,miniters=1,desc=DATA_URL.split('/')[-1]) as t:
-    urlretrieve(DATA_URL,filename=local_pkg,reporthook=tqdm_hook(t),data=None)
-
-  with tqdm(unit='B',unit_scale=True,miniters=1,desc=checksum_url.split('/')[-1]) as t:
-    urlretrieve(checksum_url,filename=local_sum,reporthook=tqdm_hook(t),data=None)
+  download_file(DATA_URL,local_pkg)
+  download_file(checksum_url,local_sum)
 
   # Verify the data
   print "Verifying data..."
@@ -214,7 +226,13 @@ def get_conf(fpath=None):
       conf_file = test
 
     if conf_file is None:
-      # Okay, wasn't there. Now try loading the default. 
+      # Try grabbing the default config from a directory next to bin/swiss.
+      default = p.join(p.dirname(swiss.__path__[0]),"../conf/default.yaml")
+      if p.isfile(default):
+        conf_file = default
+
+    if conf_file is None:
+      # Okay, wasn't there. Now try loading the default that gets shipped with swiss source.
       default = p.join(swiss.conf.__path__[0],"default.yaml")
       if p.isfile(default):
         conf_file = default
@@ -372,7 +390,7 @@ def get_settings(arg_string=None):
   data_dir = get_swiss_data_dir() if conf["data_dir"] is None else conf["data_dir"]
 
   if opts.list_files:
-    print "Configuration file was found at: " + conf["config_path"]
+    print "Configuration file was found at: " + os.path.abspath(conf["config_path"])
     print "The default config file shipped with swiss can be found at: " + os.path.join(swiss.conf.__path__[0],"default.yaml")
     print "The config file can be overridden by copying the default.yaml file to " + get_user_config_path()
     print "The swiss data directory is: " + data_dir
