@@ -54,9 +54,29 @@ The latest package tarballs are here:
 
 | Version | Date       | Install                                                         |
 |---------|------------|-----------------------------------------------------------------|
-| 1.0.0b7 | 03/03/2018 | `pip install git+https://github.com/welchr/swiss.git@v1.0.0b7`  |
+| 1.0.0 | 08/30/2018 | `pip install git+https://github.com/welchr/swiss.git@v1.0.0`  |
 
 ## Changes
+
+1.0.0 - 08/30/2018
+
+Bug fixes:
+
+* Fixed an issue with VCFs that misuse the FILTER column. Swiss now checks if "PASS" occurs anywhere within the FILTER column, and if it does, the variant is assumed to be OK to use. Previously, Swiss expected the column simply to contain "PASS" and nothing else.
+
+New features:
+
+* Support for GRCh38. EBI GWAS catalog and 1000G phase 3 genotypes in GRCh38 coordinates are both now available. Use `swiss --download-data` to grab the latest files. You can also now use `swiss-create-data` to generate new up-to-date GWAS catalogs for both GRCh37 and GRCh38.
+
+  **Note**: if you previously customized your install by copying the default swiss.yaml to `~/.config/`, you will need to repeat this process again to see the new LD sources (or just copy them over from the bottom of the file.)
+
+* Header rows beginning with "##" are now skipped in association files
+
+* Paths to files being used for calculating LD will now be shown in log
+
+Backward incompatible changes:
+
+* 1000G phase 1 LD files have been removed since they are superseded by 1000G phase 3
 
 1.0.0b7 - 03/03/2018
 
