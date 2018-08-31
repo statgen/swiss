@@ -168,7 +168,7 @@ def test_known_gwas_is_tophit(tmpdir):
 
   data = path.join(whereami, "data/top_hit_is_gwas.tab")
   gwascat = path.join(whereami, "data/gwascat_ebi_GRCh37p13.tab")
-  args = "--assoc {data} --build hg19 --ld-clump-source 1000G_2014-11_ALL " \
+  args = "swiss --assoc {data} --build hg19 --ld-clump-source 1000G_2014-11_ALL " \
          "--ld-gwas-source 1000G_2014-11_ALL --gwas-cat {gwascat} " \
          "--variant-col EPACTS --pval-col PVAL --ld-clump --clump-p 5e-08 --out {prefix}".format(data=data, prefix=prefix, gwascat=gwascat)
   swiss_main(args)
