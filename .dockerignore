@@ -1,0 +1,6 @@
+# Ignore git
+.git*
+.github*
+
+# Ignore typical virtualenv
+*venv*
