@@ -6,10 +6,21 @@ This file contains basic test cases for swiss.
 from __future__ import print_function
 import inspect
 import csv
+import os
 from os import path
 from math import isnan
 import pytest
-from swiss.main import main as swiss_main
+
+try:
+  from swiss.main import main as swiss_main
+except:
+  # We're running tests for the binary/compiled version of swiss.
+  from subprocess import check_call
+  def swiss_main(arg_string):
+    print(arg_string)
+    check_call(arg_string, shell=True)
+
+  os.environ["PATH"] = os.environ["SWISS_BINARY_PATH"] + os.pathsep + os.environ["PATH"]
 
 def assert_files_exist(*files):
   """
