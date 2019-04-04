@@ -200,6 +200,10 @@ class PlinkLDFinder():
                   "correct. " % file)
         die(msg)
 
+      if not os.path.exists(file + ".tbi"):
+        msg = fill("Error: could not find tabix file {}, VCF must be tabix indexed and bgzipped".format(file + ".tbi"))
+        die(msg)
+
   def compute(self, variant, chr, start, stop, min_r2=0):
     self.variant = variant
     self.start = max(0,start)

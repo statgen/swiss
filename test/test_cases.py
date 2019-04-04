@@ -199,3 +199,17 @@ def test_known_gwas_is_tophit(tmpdir):
 
   assert "10:114754088_T/C" in gwas_ld_variants
 
+def test_missing_tabix(tmpdir):
+  frame = inspect.currentframe()
+  func = frame.f_code.co_name
+  prefix = tmpdir.join(func)
+  whereami = path.join(path.dirname(__file__))
+
+  data = path.join(whereami, "data/top_hit_is_gwas.tab")
+  gwascat = path.join(whereami, "data/gwascat_ebi_GRCh37p13.tab")
+  args = "swiss --assoc {data} --build hg19 --ld-clump-source test/data/empty.vcf.gz " \
+         "--ld-gwas-source test/data/empty.vcf.gz --gwas-cat {gwascat} " \
+         "--variant-col EPACTS --pval-col PVAL --ld-clump --clump-p 5e-08 --out {prefix}".format(data=data, prefix=prefix, gwascat=gwascat)
+
+  with pytest.raises(SystemExit) as e:
+    swiss_main(args)
