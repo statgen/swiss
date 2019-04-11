@@ -7,6 +7,7 @@ from __future__ import print_function
 import inspect
 import csv
 import os
+import pandas as pd
 from os import path
 from math import isnan
 import pytest
@@ -213,3 +214,52 @@ def test_missing_tabix(tmpdir):
 
   with pytest.raises(SystemExit) as e:
     swiss_main(args)
+
+def test_chr_prefix(tmpdir):
+  whereami = path.join(path.dirname(__file__))
+  gwascat = path.join(whereami, "data/gwascat_ebi_GRCh37p13.tab")
+
+  # user prefix 0, vcf prefix 1
+  data = path.join(whereami, "data/test_chrprefix_prefix-0.tab")
+  vcf = path.join(whereami, "data/test_chrprefix_prefix-1.vcf.gz")
+  args = "swiss --assoc {data} --build hg19 --ld-clump-source test/data/empty.vcf.gz " \
+         "--ld-gwas-source {vcf} --ld-clump-source {vcf} --gwas-cat {gwascat} " \
+         "--variant-col EPACTS --pval-col PVAL --ld-clump --clump-p 5e-08 --out test1"
+  args = args.format(data=data,gwascat=gwascat,vcf=vcf)
+  swiss_main(args)
+  df = pd.read_table("test1.clump")
+  assert not str(df.loc[0,"CHR"]).startswith("chr")
+  assert not df.loc[0,"SWISS_VARIANT"].startswith("chr") # this is swiss' internal variant column, normalized no chr
+  assert not df.loc[0, "EPACTS"].startswith("chr") # this is the user's variant column, it can have anything
+  assert len(df) == 1
+  assert df.loc[0,"SWISS_VARIANT"] == "10:114754088_T/C"
+
+  # user prefix 1, vcf prefix 0
+  data = path.join(whereami, "data/test_chrprefix_prefix-1.tab")
+  vcf = path.join(whereami, "data/test_chrprefix_prefix-0.vcf.gz")
+  args = "swiss --assoc {data} --build hg19 --ld-clump-source test/data/empty.vcf.gz " \
+         "--ld-gwas-source {vcf} --ld-clump-source {vcf} --gwas-cat {gwascat} " \
+         "--variant-col EPACTS --pval-col PVAL --ld-clump --clump-p 5e-08 --out test2"
+  args = args.format(data=data,gwascat=gwascat,vcf=vcf)
+  swiss_main(args)
+  df = pd.read_table("test2.clump")
+  assert not str(df.loc[0,"CHR"]).startswith("chr")
+  assert not df.loc[0,"SWISS_VARIANT"].startswith("chr")
+  assert df.loc[0, "EPACTS"].startswith("chr")
+  assert len(df) == 1
+  assert df.loc[0,"SWISS_VARIANT"] == "10:114754088_T/C"
+
+  # user prefix 1, vcf prefix 1
+  data = path.join(whereami, "data/test_chrprefix_prefix-1.tab")
+  vcf = path.join(whereami, "data/test_chrprefix_prefix-1.vcf.gz")
+  args = "swiss --assoc {data} --build hg19 --ld-clump-source test/data/empty.vcf.gz " \
+         "--ld-gwas-source {vcf} --ld-clump-source {vcf} --gwas-cat {gwascat} " \
+         "--variant-col EPACTS --pval-col PVAL --ld-clump --clump-p 5e-08 --out test3"
+  args = args.format(data=data,gwascat=gwascat,vcf=vcf)
+  swiss_main(args)
+  df = pd.read_table("test3.clump")
+  assert not str(df.loc[0,"CHR"]).startswith("chr")
+  assert not df.loc[0,"SWISS_VARIANT"].startswith("chr")
+  assert df.loc[0, "EPACTS"].startswith("chr")
+  assert len(df) == 1
+  assert df.loc[0,"SWISS_VARIANT"] == "10:114754088_T/C"
