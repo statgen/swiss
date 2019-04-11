@@ -138,7 +138,7 @@ def test_distclump(tmpdir):
     variants = []
     pvalues = []
     for i, row in enumerate(reader):
-      variants.append(row["variant"])
+      variants.append(row["SWISS_VARIANT"])
       pvalues.append(float(row["PVALUE"]))
 
     expected_variants = "4:73491622_G/A 4:73768622_G/T 4:74033564_G/C 4:74512280_G/A 19:45413233_G/T".split()

@@ -123,7 +123,7 @@ class AssocResults:
     self.trait_col = "TRAIT"
     
     # Internal column generated with EPACTS formatted IDs
-    self.epacts_col = "variant"
+    self.epacts_col = "SWISS_VARIANT"
 
     self.pval_thresh = pval_thresh
     self.rsq_filter = rsq_filter
