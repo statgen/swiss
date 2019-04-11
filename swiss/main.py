@@ -56,7 +56,7 @@ from swiss.conf.writer import write_conf
 PROG_NAME = "Swiss"
 PROG_VERSION = "1.0.0"
 PROG_AUTHOR = "Ryan Welch (welchr@umich.edu)"
-PROG_URL = "https://github.com/welchr/Swiss"
+PROG_URL = "https://github.com/statgen/Swiss"
 DATA_URL = "https://portaldev.sph.umich.edu/swiss/swiss_data_{}.tar.gz".format(PROG_VERSION)
 
 __builtin__.SWISS_DEBUG = False
