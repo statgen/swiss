@@ -216,6 +216,7 @@ class AssocResults:
       for index, row in data.iterrows():
         variant = data.at[index,self.vid_col]
         chrom, pos, ref, alt, _ = parse_epacts(variant)
+        chrom = chrom.replace("chr","")
 
         # If they didn't give us chrom/pos as columns, we need to fill it in.
         data.at[index,self.chrom_col] = chrom

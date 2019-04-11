@@ -43,6 +43,30 @@ def vcf_get_header(vcf_file):
       if line.startswith("#CHROM"):
         return line
 
+def vcf_get_chrom_prefix(vcf_file):
+  """
+  Detect chromosome format from VCF file.
+
+  :param vcf_file:
+  :return: Prefix of chromosome.
+  """
+
+  with gzip.open(vcf_file, "rt") as fp:
+    for i, line in enumerate(fp):
+      if line.startswith("#"):
+        continue
+
+      chrom = line[0:50].split("\t")[0]
+
+      if chrom.startswith("chrom"):
+        # Probably not very common but worth a shot.
+        return "chrom"
+      elif chrom.startswith("chr"):
+        # The most common case.
+        return "chr"
+      else:
+        return ""
+
 def vcf_get_line(vcf_file,chrom=None,pos=None,epacts_id=None,snps_only=False):
   """
   Given a VCF file and a variant specified as either chrom/pos or an EPACTS ID, return the rows from the file
@@ -273,6 +297,10 @@ class PlinkLDFinder():
       ignore_indels: should we skip over indel variants in the VCF?
     """
 
+    # Figure out chromosome prefix in VCF
+    vcf_chrom_prefix = vcf_get_chrom_prefix(vcf_file)
+    region = vcf_chrom_prefix + region
+
     # Use tabix to pull out the region of interest from the VCF file.
     # plink1.9 does not have the ability to do this on its own.
     tabix_cmd = "{tabix} -h {0} {1}".format(vcf_file,region,tabix=self.settings.tabix_path)
@@ -313,6 +341,9 @@ class PlinkLDFinder():
       ls[-1] = ls[-1].rstrip()
 
       chrom, pos, vid, ref, alt, qual, filt = ls[0:7]
+
+      # PLINK doesn't seem to accept "chr" in the chromosome
+      chrom = chrom.replace("chr","")
 
       # If this variant isn't marked as PASS, we shouldn't consider it.
       if not ignore_filter and "PASS" not in filt:
