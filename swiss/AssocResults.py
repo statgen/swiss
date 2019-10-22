@@ -27,37 +27,37 @@ LOAD_CHUNKSIZE = 500000
 
 class ChromTree:
   def __init__(self):
-    self.chrom = {};
+    self.chrom = {}
 
   def add_position(self,chrom,pos):
-    self.chrom.setdefault(chrom,IntervalTree()).add(pos,pos);
+    self.chrom.setdefault(chrom,IntervalTree()).add(pos,pos)
 
   def add_interval(self,chrom,start,end):
-    self.chrom.setdefault(chrom,IntervalTree()).add(start,end);
+    self.chrom.setdefault(chrom,IntervalTree()).add(start,end)
 
   def find_overlap(self,chrom,start,end=None):
-    node = self.chrom.get(chrom);
+    node = self.chrom.get(chrom)
     if node is None:
-      return None;
+      return None
     else:
       if end is None:
-        end = start;
-      return node.find(start,end);
+        end = start
+      return node.find(start,end)
 
 def sort_genome(dframe,chr_col,pos_col):
-  dframe['int_chr'] = dframe[chr_col].map(chrom2chr);
-  dframe = dframe.sort_values(['int_chr',pos_col]);
-  del dframe['int_chr'];
+  dframe['int_chr'] = dframe[chr_col].map(chrom2chr)
+  dframe = dframe.sort_values(['int_chr',pos_col])
+  del dframe['int_chr']
 
-  return dframe;
+  return dframe
 
 def fix_chrom(x):
   try:
-    x = str(int(float(x)));
+    x = str(int(float(x)))
   except:
-    x = str(x);
+    x = str(x)
 
-  return x.replace("chr","");
+  return x.replace("chr","")
 
 def get_header(filepath,sep="\t"):
   with open(filepath) as f:
@@ -67,15 +67,15 @@ def get_header(filepath,sep="\t"):
 
 def filter_imp_quality(dframe,rsq_col,threshold=0.3):
   try:
-    threshold = float(threshold);
+    threshold = float(threshold)
   except:
-    error("Imputation quality threshold is not floatable, got: %s" % str(threshold));
+    error("Imputation quality threshold is not floatable, got: %s" % str(threshold))
 
-  # RSQ needs to be float in order to threshold it correctly 
-  dframe[rsq_col] = dframe[rsq_col].astype("float");
+  # RSQ needs to be float in order to threshold it correctly
+  dframe[rsq_col] = dframe[rsq_col].astype("float")
 
   # Filter
-  dframe = dframe[(dframe[rsq_col] >= threshold) | dframe[rsq_col].isnull()];
+  dframe = dframe[(dframe[rsq_col] >= threshold) | dframe[rsq_col].isnull()]
 
   return dframe
 
@@ -109,9 +109,9 @@ class AssocResults:
     :return: This object
     """
 
-    self.filepath = filepath;
-    self.data = df;
-    self.trait = trait;
+    self.filepath = filepath
+    self.data = df
+    self.trait = trait
 
     self.pval_col = "P-value"
     self.vid_col = "MarkerName"
@@ -121,7 +121,7 @@ class AssocResults:
     self.ref_col = "REF"
     self.alt_col = "ALT"
     self.trait_col = "TRAIT"
-    
+
     # Internal column generated with EPACTS formatted IDs
     self.epacts_col = "SWISS_VARIANT"
 
@@ -131,7 +131,7 @@ class AssocResults:
 
   def load(self,*args,**kwargs):
     data = self.data
-    
+
     # If a data frame isn't already loaded, we need to read it from a file.
     if data is None:
       # Specify data types for loading.
@@ -149,7 +149,7 @@ class AssocResults:
       # So we need to skip them manually...
       skip_count = nskip_double_pound(self.filepath)
 
-      df_iter = pd.read_table(self.filepath,na_values=["NA","None","."],iterator=True,chunksize=LOAD_CHUNKSIZE,skiprows=skip_count,dtype=dtypes,*args,**kwargs);
+      df_iter = pd.read_table(self.filepath,na_values=["NA","None","."],iterator=True,chunksize=LOAD_CHUNKSIZE,skiprows=skip_count,dtype=dtypes,*args,**kwargs)
 
       chunks = []
       for chunk in df_iter:
@@ -169,7 +169,7 @@ class AssocResults:
       data = pd.concat(chunks)
 
     else:
-      # We still need to run our filters, even if a data frame was passed in. 
+      # We still need to run our filters, even if a data frame was passed in.
       if self.pval_thresh is not None:
         data = data[data[self.pval_col] < self.pval_thresh]
       else:
@@ -186,13 +186,13 @@ class AssocResults:
 
     for col in ('pval_col','vid_col'):
       if self.__dict__[col] not in data.columns:
-        error("column '%s' does not exist in your association results data" % self.__dict__[col]);
+        error("column '%s' does not exist in your association results data" % self.__dict__[col])
 
     has_epacts_cols = (self.chrom_col in data) &\
                       (self.pos_col in data) &\
                       (self.ref_col in data) &\
                       (self.alt_col in data)
-    
+
     if has_epacts_cols:
       # If the data file has the needed columns, we can create an EPACTS formatted ID for each variant.
       data.loc[:, self.epacts_col] = data[self.chrom_col].astype("str").str.replace("chr", "") +\
@@ -228,7 +228,7 @@ class AssocResults:
     # Drop variants that do not have chromosome
     data = data[data[self.chrom_col].notnull()]
 
-    # Try to fix chromosome column. 
+    # Try to fix chromosome column.
     # Should just be 1, 2, 3, X, Y and not chr4 or chrX
     data[self.chrom_col] = data[self.chrom_col].map(fix_chrom)
 
@@ -238,7 +238,7 @@ class AssocResults:
     # Position must be an integer or it doesn't make sense.
     data[self.pos_col] = data[self.pos_col].astype('int')
 
-    # Try to insert the trait as a column. 
+    # Try to insert the trait as a column.
     if self.trait_col in data.columns:
       print "Using trait column %s in association reults file..." % self.trait_col
     else:
@@ -250,30 +250,30 @@ class AssocResults:
   def liftover(self,build):
     pass
 
-  # Drop a list of variants from the data. 
-  # This will remove any variant with the same name OR the same chrom/pos. 
+  # Drop a list of variants from the data.
+  # This will remove any variant with the same name OR the same chrom/pos.
   # def drop_variants(self,variant_list):
   #   for v in variant_list:
   #     # Drop any variant with the same name (marker ID.)
-  #     self.data = self.data[self.data[self.marker_col] != v.vid];
+  #     self.data = self.data[self.data[self.marker_col] != v.vid]
   #
   #     # Drop any variant with the same chrom/pos.
-  #     data_chrpos = self.data[self.chrom_col] + ":" + self.data[self.pos_col].map(lambda x: str(int(x)));
-  #     variant_chrpos = v.as_chrpos();
-  #     self.data = self.data[data_chrpos != variant_chrpos];
+  #     data_chrpos = self.data[self.chrom_col] + ":" + self.data[self.pos_col].map(lambda x: str(int(x)))
+  #     variant_chrpos = v.as_chrpos()
+  #     self.data = self.data[data_chrpos != variant_chrpos]
 
-  # Keep a list of variants and discard the rest. 
-  # Variants are kept if their names directly match, or they are at the same chrom/pos. 
+  # Keep a list of variants and discard the rest.
+  # Variants are kept if their names directly match, or they are at the same chrom/pos.
   # def keep_variants(self,variant_list):
-  #   names = [v.vid for v in variant_list];
-  #   chrpos = [v.as_chrpos() for v in variant_list];
+  #   names = [v.vid for v in variant_list]
+  #   chrpos = [v.as_chrpos() for v in variant_list]
   #
-  #   data_chrpos = self.data[self.chrom_col] + ":" + self.data[self.pos_col].map(lambda x: str(int(x)));
+  #   data_chrpos = self.data[self.chrom_col] + ":" + self.data[self.pos_col].map(lambda x: str(int(x)))
   #
-  #   name_match = self.data[self.marker_col].isin(names);
-  #   chrpos_match = data_chrpos.isin(chrpos);
+  #   name_match = self.data[self.marker_col].isin(names)
+  #   chrpos_match = data_chrpos.isin(chrpos)
   #
-  #   self.data = self.data[name_match | chrpos_match];
+  #   self.data = self.data[name_match | chrpos_match]
 
   def dist_clump(self,p_thresh=5e-08,dist=50E3):
     # TODO: fix this mess (why return the data re-ordered, and why even subset at all - just use .at and labels instead of .iat)
@@ -288,7 +288,7 @@ class AssocResults:
     self.data = self.data[col_order]
 
     if self.data.shape[0] <= 0:
-      return;
+      return
 
     tree = ChromTree()
     for i in xrange(self.data.shape[0]):
