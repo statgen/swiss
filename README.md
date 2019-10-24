@@ -54,9 +54,23 @@ The latest package tarballs are here:
 
 | Version | Date       | Install                                                         |
 |---------|------------|-----------------------------------------------------------------|
-| 1.0.0 | 08/30/2018 | `pip install git+https://github.com/welchr/swiss.git@v1.0.0`  |
+| 1.1.0 | XX/XX/2019 | `pip install git+https://github.com/welchr/swiss.git@dev`  |
 
 ## Changes
+
+1.1.0 - XX/XX/2019
+
+Bug fixes:
+
+* Fixed an issue where VCFs with chromosomes specified as 'chr#' instead of simply '#' would cause swiss to send no output to PLINK, which produced a red herring "File read failure" message.
+
+* Existence of tabix index was not previously checked
+
+* P-values exceeding double precision were not properly handled and would result in p-value of 0.0 in result file
+
+New features:
+
+* P-values can be provided in log10 scale now using the `--logp-col` option to denote which column contains log10 p-values. Note that this is exactly log10(p-value), and *not* -log10. The reason for this is that the most popular meta-analysis program METAL outputs log10(p) when using the LOGPVALUE ON option.
 
 1.0.0 - 08/30/2018
 
@@ -550,21 +564,21 @@ The command above will:
 
 Instead of waiting for data releases from `swiss --download-data` (which
 contain a GWAS catalog from EBI), you can generate your own up to date
-catalog with the `swiss-create-data` script. 
+catalog with the `swiss-create-data` script.
 
 Note that this script downloads some rather large files from NCBI, in
-order to translate GWAS catalog variants into CHR/POS/REF/ALT. 
+order to translate GWAS catalog variants into CHR/POS/REF/ALT.
 
 The process takes roughly an hour or two depending on your internet
-connection. 
+connection.
 
-To generate a new catalog: 
+To generate a new catalog:
 
 ```
 swiss-create-data --genome-build GRCh37p13 --dbsnp-build b147
 ```
 
-This will create two files: 
+This will create two files:
 
 ```
 -rw-r----- 1 user user  22G Nov 30 18:39 GRCh37p13_b147.sqlite
@@ -573,12 +587,12 @@ This will create two files:
 
 The first file is a SQLite database created from the downloaded NCBI
 dbSNP VCF. The second file is the processed GWAS catalog that can be
-used by swiss. 
+used by swiss.
 
 To use the catalog, you can either provide the path to it directly by
 using `--gwas-cat /path/to/gwascat_ebi_GRCh37p13.tab`, or you can modify
 the config file (see `swiss --list-files`) and add an entry for it
-there. 
+there.
 
 ## Options
 
@@ -741,7 +755,7 @@ usage: swiss [options]
 
 ## Limitations
 
-The latest human genome build (hg38) is not yet supported. 
+The latest human genome build (hg38) is not yet supported.
 
 ## License
 
