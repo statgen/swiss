@@ -54,11 +54,11 @@ The latest package tarballs are here:
 
 | Version | Date       | Install                                                         |
 |---------|------------|-----------------------------------------------------------------|
-| 1.1.0 | XX/XX/2019 | `pip install git+https://github.com/welchr/swiss.git@dev`  |
+| 1.1.0 | 10/24/2019 | `pip install git+https://github.com/welchr/swiss.git@v1.1.0`  |
 
 ## Changes
 
-1.1.0 - XX/XX/2019
+1.1.0 - 10/24/2019
 
 Bug fixes:
 
