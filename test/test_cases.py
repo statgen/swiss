@@ -200,6 +200,70 @@ def test_known_gwas_is_tophit(tmpdir):
 
   assert "10:114754088_T/C" in gwas_ld_variants
 
+def test_high_precision_pvalue(tmpdir):
+  """
+  Ensure proper behavior when p-values in dataset exceed double precision
+  """
+
+  frame = inspect.currentframe()
+  func = frame.f_code.co_name
+  prefix = tmpdir.join(func)
+  whereami = path.join(path.dirname(__file__))
+
+  data = path.join(whereami, "data/high_precision_pvalue.tab")
+  gwascat = path.join(whereami, "data/gwascat_ebi_GRCh37p13.tab")
+  args = "swiss --assoc {data} --build hg19 --ld-clump-source 1000G_2014-11_ALL " \
+         "--ld-gwas-source 1000G_2014-11_ALL --gwas-cat {gwascat} " \
+         "--variant-col EPACTS --pval-col PVAL --ld-clump --clump-p 5e-08 --out {prefix}".format(data=data, prefix=prefix, gwascat=gwascat)
+  swiss_main(args)
+
+  file_clump = prefix + ".clump"
+  file_neargwas = prefix + ".near-gwas.tab"
+  file_ldgwas = prefix + ".ld-gwas.tab"
+
+  assert_files_exist(file_clump, file_neargwas, file_ldgwas)
+
+  top_variants = set()
+  with open(str(file_clump)) as infile:
+    reader = csv.DictReader(infile, delimiter="\t")
+    for line in reader:
+      top_variants.add(line["EPACTS"])
+
+  assert "10:114758349_C/T" in top_variants
+  assert len(top_variants) == 1
+
+def test_logp(tmpdir):
+  """
+  Test giving --logp-col parameter
+  """
+
+  frame = inspect.currentframe()
+  func = frame.f_code.co_name
+  prefix = tmpdir.join(func)
+  whereami = path.join(path.dirname(__file__))
+
+  data = path.join(whereami, "data/high_precision_pvalue_with_logpcol.tab")
+  gwascat = path.join(whereami, "data/gwascat_ebi_GRCh37p13.tab")
+  args = "swiss --assoc {data} --build hg19 --ld-clump-source 1000G_2014-11_ALL " \
+         "--ld-gwas-source 1000G_2014-11_ALL --gwas-cat {gwascat} " \
+         "--variant-col EPACTS --logp-col LOGP --ld-clump --clump-p 5e-08 --out {prefix}".format(data=data, prefix=prefix, gwascat=gwascat)
+  swiss_main(args)
+
+  file_clump = prefix + ".clump"
+  file_neargwas = prefix + ".near-gwas.tab"
+  file_ldgwas = prefix + ".ld-gwas.tab"
+
+  assert_files_exist(file_clump, file_neargwas, file_ldgwas)
+
+  top_variants = set()
+  with open(str(file_clump)) as infile:
+    reader = csv.DictReader(infile, delimiter="\t")
+    for line in reader:
+      top_variants.add(line["EPACTS"])
+
+  assert "10:114758349_C/T" in top_variants
+  assert len(top_variants) == 1
+
 def test_missing_tabix(tmpdir):
   frame = inspect.currentframe()
   func = frame.f_code.co_name

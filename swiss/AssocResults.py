@@ -114,6 +114,7 @@ class AssocResults:
     self.trait = trait
 
     self.pval_col = "P-value"
+    self.logp_col = "LOGPVALUE"
     self.vid_col = "MarkerName"
     self.chrom_col = "chr"
     self.pos_col = "pos"
@@ -137,7 +138,8 @@ class AssocResults:
       # Specify data types for loading.
       # Positions should be fine with a 32-bit int.
       dtypes = {
-        self.pos_col : pd.np.uint32
+        self.pos_col: pd.np.uint32,
+        self.pval_col: str
       }
 
       # Imputation accuracies only require a 32-bit float (maybe even a half float would be fine)
@@ -153,10 +155,17 @@ class AssocResults:
 
       chunks = []
       for chunk in df_iter:
+        if self.logp_col not in chunk.columns:
+          if self.pval_col not in chunk.columns:
+            error("Cannot find p-value column (or log p-value column) in your data: please specify --pval-col or --logp-col")
+
+          chunk[self.logp_col] = chunk[self.pval_col].map(convert_to_log10)
+
         if self.pval_thresh is not None:
-          chunk = chunk[chunk[self.pval_col] < self.pval_thresh]
+          chunk = chunk[chunk[self.logp_col] < float(self.pval_thresh.log10())]
         else:
           chunk[self.pval_col] = np.random.uniform(size=chunk.shape[0])
+          chunk[self.logp_col] = np.log10(chunk[self.pval_col])
 
         if self.rsq_filter is not None:
           chunk = filter_imp_quality(chunk,self.rsq_col,self.rsq_filter)
@@ -171,12 +180,18 @@ class AssocResults:
     else:
       # We still need to run our filters, even if a data frame was passed in.
       if self.pval_thresh is not None:
-        data = data[data[self.pval_col] < self.pval_thresh]
+        # Here, they've already given us a p-value column. If they have high precision p-values, we can only hope they
+        # passed a column of Decimal() objects. What's great is that -np.log10(Decimal(x)) returns Decimal, so the code
+        # below works in either float or Decimal cases.
+        if self.logp_col not in data:
+          data[self.logp_col] = np.log10(data[self.pval_col])
+        data = data[data[self.logp_col] < float(self.pval_thresh.log10())]
       else:
         # If no p-value threshold was given, it means give each variant a random p-value
         # to use when pruning (basically, a random SNP within each LD clump will end up getting
         # selected
         data[self.pval_col] = np.random.uniform(size=data.shape[0])
+        data[self.logp_col] = np.log10(data[self.pval_col])
 
       if self.rsq_filter is not None:
         data = filter_imp_quality(data,self.rsq_col,self.rsq_filter)
@@ -184,7 +199,7 @@ class AssocResults:
       if self.query is not None:
         data = data.query(self.query)
 
-    for col in ('pval_col','vid_col'):
+    for col in ('vid_col',):
       if self.__dict__[col] not in data.columns:
         error("column '%s' does not exist in your association results data" % self.__dict__[col])
 
@@ -279,11 +294,11 @@ class AssocResults:
     # TODO: fix this mess (why return the data re-ordered, and why even subset at all - just use .at and labels instead of .iat)
     # ...
 
-    self.data = self.data[self.data[self.pval_col] < p_thresh]
-    self.data = self.data.sort_values(self.pval_col)
+    self.data = self.data[self.data[self.logp_col] < float(p_thresh.log10())]
+    self.data = self.data.sort_values(self.logp_col)
 
     self.data['drop_row'] = False
-    begin_cols = [self.epacts_col, self.pval_col, self.chrom_col, self.pos_col, 'drop_row']
+    begin_cols = [self.epacts_col, self.pval_col, self.logp_col, self.chrom_col, self.pos_col, 'drop_row']
     col_order = begin_cols + list(set(self.data.columns.tolist()).difference(begin_cols))
     self.data = self.data[col_order]
 
@@ -292,11 +307,11 @@ class AssocResults:
 
     tree = ChromTree()
     for i in xrange(self.data.shape[0]):
-      chrom = self.data.iat[i,2]
-      pos = self.data.iat[i,3]
+      chrom = self.data.iat[i,3]
+      pos = self.data.iat[i,4]
 
       if tree.find_overlap(chrom,pos - dist,pos + dist):
-        self.data.iat[i,4] = True # drop column
+        self.data.iat[i,5] = True # drop column
       else:
         tree.add_position(chrom,pos)
 

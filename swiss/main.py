@@ -52,6 +52,7 @@ from tqdm import tqdm
 import swiss.conf
 from swiss.conf.reader import read_conf
 from swiss.conf.writer import write_conf
+from decimal import Decimal
 
 PROG_NAME = "Swiss"
 PROG_VERSION = "1.0.0"
@@ -220,7 +221,7 @@ def get_conf(fpath=None):
   conf_file = fpath
 
   if fpath is None:
-    # First try in user config dir. 
+    # First try in user config dir.
     test = get_user_config_path()
     if p.isfile(test):
       conf_file = test
@@ -237,7 +238,7 @@ def get_conf(fpath=None):
       if p.isfile(default):
         conf_file = default
 
-  # By now we should have found it. 
+  # By now we should have found it.
   if conf_file is not None:
     config = read_conf(conf_file)
     config["config_path"] = conf_file
@@ -276,7 +277,7 @@ def find_gwas_catalog(conf,build,gwas_cat):
     # Relative to package install location
     import swiss
     default = p.join(data_dir,entry)
-    
+
     if p.isfile(default):
       return default
     else:
@@ -293,7 +294,7 @@ def find_ld_source(conf,build,ld_source):
     # Relative to package install location
     import swiss
     default = p.join(data_dir,entry)
-    
+
     if p.isfile(default):
       return default
     else:
@@ -320,7 +321,7 @@ def get_settings(arg_string=None):
   parser.add_option("--list-files",help="Show the locations of files in use by swiss.",default=False,action="store_true")
   parser.add_option("--download-data",help="Download pre-formatted and compiled data (LD, GWAS catalogs, etc.)",default=False,action="store_true")
 
-  # Association result input options. 
+  # Association result input options.
   parser.add_option("--assoc",help="[Required] Association results file.")
   parser.add_option("--multi-assoc",help="Designate that the results file is in EPACTS multi-assoc format.",action="store_true",default=False)
   parser.add_option("--trait",help="Description of phenotype for association results file. E.g. 'HDL' or 'T2D'")
@@ -328,25 +329,26 @@ def get_settings(arg_string=None):
   parser.add_option("--build",help="Genome build your association results are anchored to.",default="hg19")
   parser.add_option("--variant-col",help="Variant column name in results file.",default="MARKER_ID")
   parser.add_option("--pval-col",help="P-value column name in results file.",default="PVALUE")
+  parser.add_option("--logp-col",help="log10(p-value) column",default="LOGPVALUE")
   parser.add_option("--chrom-col",help="Chromosome column name in results file.",default="CHR")
   parser.add_option("--pos-col",help="Position column name in results file.",default="POS")
   parser.add_option("--rsq-col",help="Imputation quality column name.",default="RSQ")
   parser.add_option("--trait-col",help="Trait column name. Can be omitted, in which case the value of --trait will be added as a column.",default=None)
 
-  # Association result filtering results. 
+  # Association result filtering results.
   parser.add_option("--rsq-filter",help="Remove variants below this imputation quality.",default=None)
   parser.add_option("--filter",help="Give a general filter string to filter variants.",default=None)
 
-  # Output options. 
+  # Output options.
   parser.add_option("--out",help="Prefix for output files.",default="swiss_output")
 
-  # LD clumping options. 
+  # LD clumping options.
   parser.add_option("--ld-clump",help="Clump association results by LD.",action="store_true",default=False)
   parser.add_option("--clump-p",help="P-value threshold for LD and distance based clumping.",default=5e-08)
   parser.add_option("--clump-ld-thresh",help="LD threshold for clumping.",default=0.2,type="float")
   parser.add_option("--clump-ld-dist",help="Distance from each significant result to calculate LD.",default=1E6,type="int")
 
-  # Distance clumping options. 
+  # Distance clumping options.
   parser.add_option("--dist-clump",help="Clump association results by distance.",action="store_true",default=False)
   parser.add_option("--clump-dist",help="Distance threshold to use for clumping based on distance.",default=2.5e5,type="int")
 
@@ -483,7 +485,7 @@ def get_settings(arg_string=None):
     opts.clump_p = None
 
   if opts.clump_p is not None:
-    opts.clump_p = float(opts.clump_p)
+    opts.clump_p = Decimal(opts.clump_p)
     if opts.clump_p < 0 or opts.clump_p > 1:
       error("P-value threshold must be >= 0 or <= 1.")
   else:
@@ -491,19 +493,19 @@ def get_settings(arg_string=None):
 
   opts.clump_ld_dist = int(float(opts.clump_ld_dist))
 
-  # If one source is specified, but not the other, assume the user meant to use this for both. 
+  # If one source is specified, but not the other, assume the user meant to use this for both.
   # ld clump source XOR ld gwas source
   if (opts.ld_clump_source is None) != (opts.ld_gwas_source is None):
     if opts.ld_clump_source is None:
       opts.ld_clump_source = opts.ld_gwas_source
     elif opts.ld_gwas_source is None:
       opts.ld_gwas_source = opts.ld_clump_source
-    
+
   # LD clumping source
   if not os.path.isfile(opts.ld_clump_source):
     if not conf["ld_sources"][opts.build].has_key(opts.ld_clump_source):
-      # They specified something, but it's apparently not a file, and not a key. 
-      # Maybe the file is a typo? 
+      # They specified something, but it's apparently not a file, and not a key.
+      # Maybe the file is a typo?
       match = find_likely_file(opts.ld_clump_source)
       if match is not None:
         print "Couldn't find --ld-clump-source, but a file in the directory was a possible match: "
@@ -516,18 +518,18 @@ def get_settings(arg_string=None):
       error("Could not locate VCF file for conf entry '%s - %s'!" % (opts.build,opts.ld_clump_source))
   else:
     opts.ld_clump_source_file = opts.ld_clump_source
-  
+
   # GWAS LD lookup source
   if not os.path.isfile(opts.ld_gwas_source):
     if not conf["ld_sources"][opts.build].has_key(opts.ld_gwas_source):
-      # They specified something, but it's apparently not a file, and not a key. 
-      # Maybe the file is a typo? 
+      # They specified something, but it's apparently not a file, and not a key.
+      # Maybe the file is a typo?
       match = find_likely_file(opts.ld_gwas_source)
       if match is not None:
         print "Couldn't find --ld-gwas-source, but a file in the directory was a possible match: "
         print show_diff(opts.ld_gwas_source,match)
         sys.exit(1)
-    
+
     opts.ld_gwas_source_file = find_ld_source(conf,opts.build,opts.ld_gwas_source)
 
     if opts.ld_gwas_source_file is None:
@@ -577,6 +579,7 @@ def get_settings(arg_string=None):
   if opts.multi_assoc:
     opts.variant_col = "MARKER_ID"
     opts.pval_col = "PVALUE"
+    opts.logp_col = "LOGPVALUE"
     opts.chrom_col = "#CHROM"
     opts.pos_col = "BEG"
 
@@ -714,6 +717,7 @@ def multiassoc_epacts_load(result_file,trait,pval_thresh=None,rsq_col=None,rsq_f
 
   dtypes = EPACTS_DTYPES.copy()
   dtypes[beta_col] = pd.np.float32
+  dtypes[pval_col] = str
 
   df_iter = pd.read_table(result_file,
     compression = "gzip" if result_file.endswith(".gz") else None,
@@ -726,8 +730,10 @@ def multiassoc_epacts_load(result_file,trait,pval_thresh=None,rsq_col=None,rsq_f
 
   chunks = []
   for chunk in df_iter:
+    trait_logp_col = "{}.LOGP".format(trait)
+    chunk[trait_logp_col] = chunk[pval_col].map(convert_to_log10)
     if pval_thresh is not None:
-      chunk = chunk[chunk[pval_col] < pval_thresh]
+      chunk = chunk[chunk[trait_logp_col] < float(pval_thresh.log10())]
 
     if rsq_filter is not None:
       chunk = filter_imp_quality(chunk,rsq_col,rsq_filter)
@@ -740,6 +746,7 @@ def multiassoc_epacts_load(result_file,trait,pval_thresh=None,rsq_col=None,rsq_f
   df = pd.concat(chunks)
 
   df.rename(columns = {
+    trait + ".LOGP" : "LOGPVALUE",
     trait + ".P" : "PVALUE",
     trait + ".B" : "BETA"
   },inplace=True)
@@ -785,6 +792,7 @@ def run_process(assoc,trait,outprefix,opts):
   results.chrom_col = opts.chrom_col
   results.pos_col = opts.pos_col
   results.pval_col = opts.pval_col
+  results.logp_col = opts.logp_col
   results.rsq_col = opts.rsq_col
   if opts.trait_col is not None:
     results.trait_col = opts.trait_col
@@ -834,14 +842,15 @@ def run_process(assoc,trait,outprefix,opts):
       return
 
     print "\nResults after clumping: "
-    print_cols = [
+    print_cols = [x for x in [
       opts.variant_col,
       opts.chrom_col,
       opts.pos_col,
       opts.pval_col,
+      opts.logp_col,
       'ld_with',
       'failed_clump'
-    ]
+    ] if x in results_clumped.data]
     print results_clumped.data[print_cols].to_string(index=False)
 
     out_clump = outprefix + ".clump"
@@ -893,12 +902,13 @@ def run_process(assoc,trait,outprefix,opts):
       return
 
     print "\nResults after clumping: "
-    print_cols = [
+    print_cols = [x for x in [
       opts.variant_col,
       opts.chrom_col,
       opts.pos_col,
       opts.pval_col,
-    ]
+      opts.logp_col
+    ] if x in results.data]
 
     print results.data[print_cols].to_string(index=False)
     out_clump = outprefix + ".clump"
@@ -1064,6 +1074,6 @@ def main(arg_string=None):
     run_process(opts.assoc,opts.trait,opts.out,opts)
 
   return opts, args
-      
+
 if __name__ == "__main__":
   main()

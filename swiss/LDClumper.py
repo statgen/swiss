@@ -33,19 +33,21 @@ class LDClumper:
 
     variant_col = self.assoc.epacts_col
     pval_col = self.assoc.pval_col
+    logp_col = self.assoc.logp_col
     chr_col = self.assoc.chrom_col
     pos_col = self.assoc.pos_col
 
     ld_dist = int(ld_dist)
 
-    # Sort by p-value. 
-    data = data.sort_values(pval_col)
+    # Sort by p-value.
+    data = data.sort_values(logp_col)
 
     print "\nStarting with significant %i SNPs:" % int(data.shape[0])
-    print sort_genome(data[[variant_col,pval_col,chr_col,pos_col]],chr_col,pos_col).to_string(index=False)
+    preview_cols = filter(lambda x: x in data.columns, [variant_col,pval_col,logp_col,chr_col,pos_col])
+    print sort_genome(data[preview_cols],chr_col,pos_col).to_string(index=False)
     print ""
 
-    # Add a column to keep track of which variants were removed due to LD. 
+    # Add a column to keep track of which variants were removed due to LD.
     data['ld_with'] = ""
 
     # Add a column to keep track of the LD values with those removed variants.
@@ -57,7 +59,7 @@ class LDClumper:
     # Loop over variants, removing those in LD and keeping the most significant from each batch.
     failed_ld_variants = []
     for i in xrange(data.shape[0]):
-      # Get the best variant at the top of the list. 
+      # Get the best variant at the top of the list.
       if i < data.shape[0]:
         top_chr = data[chr_col].iat[i]
         top_pos = data[pos_col].iat[i]
@@ -70,7 +72,7 @@ class LDClumper:
 
       ld_ok = self.finder.compute(top_marker,top_chr,top_pos - ld_dist,top_pos + ld_dist,ld_thresh)
 
-      # Remove variants in LD with this one. 
+      # Remove variants in LD with this one.
       if ld_ok:
         keep = [True] * data.shape[0]
         ld_values = []
@@ -98,14 +100,14 @@ class LDClumper:
         # This variant was successfully clumped
         data['failed_clump'].iloc[i] = "pass"
 
-        # Remove variants in LD, move on to the next top SNP. 
+        # Remove variants in LD, move on to the next top SNP.
         data = data[keep]
       else:
         failed_variant = Variant()
         failed_variant.vid = data[variant_col].iat[i]
         failed_variant.chrom = data[chr_col].iat[i]
         failed_variant.pos = data[pos_col].iat[i]
-        
+
         failed_ld_variants.append(failed_variant)
 
         data['failed_clump'].iloc[i] = "fail"

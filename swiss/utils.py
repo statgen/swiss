@@ -18,8 +18,46 @@
 #===============================================================================
 
 import __builtin__
-import os, sys, decimal, fnmatch, gzip
+import os, sys, decimal, fnmatch, gzip, re
+import numpy as np
 from termcolor import colored
+
+RE_FLOAT = re.compile("([\d\.\-]+)([\sxeE]*)([0-9\-]*)")
+
+def convert_to_log10(value,na_strings=["NA","NaN","nan",".",""]):
+  """
+  Take the log10 of a **string** representing either a plain number,
+  or number in scientific notation. This can handle arbitrary precision.
+
+  In [1]: convert_to_log10("1.93e-780")
+  Out[1]: -779.7144426909922
+  """
+
+  import re
+  from math import log10
+
+  if value in na_strings:
+    return np.nan
+
+  if isinstance(value, float):
+    if np.isnan(value):
+      return value
+    else:
+      raise ValueError("Must pass string, not floating point value")
+
+  base, _, exponent = RE_FLOAT.search(value).groups()
+  base = float(base)
+
+  if exponent != '':
+    exponent = float(exponent)
+  else:
+    exponent = 0
+
+  if base == 0:
+    return float("-inf")
+
+  lv = log10(float(base)) + float(exponent)
+  return lv
 
 def parse_epacts(v,strict=True):
   """
@@ -103,7 +141,7 @@ def error(msg):
 def warning(msg):
   print >> sys.stderr, colored("Warning: ",'yellow') + msg;
 
-# Great way to implement python enums, courtesy of: 
+# Great way to implement python enums, courtesy of:
 # http://stackoverflow.com/questions/36932/whats-the-best-way-to-implement-an-enum-in-python
 def enum(*sequential, **named):
   enums = dict(zip(sequential, range(len(sequential))), **named)
@@ -126,7 +164,7 @@ def which(f):
 
     if not os.path.isdir(path):
       continue;
-    
+
     for file in os.listdir(path):
       if os.path.basename(f) == file:
         return os.path.join(path,file);
@@ -145,11 +183,11 @@ def find_systematic(fpath):
 
   if os.path.isfile(fpath):
     return os.path.abspath(fpath)
-  
+
   whiched_file = which(fpath)
   if whiched_file is not None:
     return whiched_file
- 
+
   return None
 
 def is_number(x):
@@ -206,4 +244,4 @@ def chr2chrom(c):
     return 'XY';
   else:
     return None;
-  
+
