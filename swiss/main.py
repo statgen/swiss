@@ -55,7 +55,7 @@ from swiss.conf.writer import write_conf
 from decimal import Decimal
 
 PROG_NAME = "Swiss"
-PROG_VERSION = "1.0.0"
+PROG_VERSION = "1.1.0"
 PROG_AUTHOR = "Ryan Welch (welchr@umich.edu)"
 PROG_URL = "https://github.com/statgen/Swiss"
 DATA_URL = "https://portaldev.sph.umich.edu/swiss/swiss_data_{}.tar.gz".format(PROG_VERSION)
