@@ -161,6 +161,9 @@ class AssocResults:
 
           chunk[self.logp_col] = chunk[self.pval_col].map(convert_to_log10)
 
+        if (chunk[self.logp_col] > 0).any():
+          raise ValueError("log10 p-value contained positive values, did you provide -log10 instead?")
+
         if self.pval_thresh is not None:
           chunk = chunk[chunk[self.logp_col] < float(self.pval_thresh.log10())]
         else:

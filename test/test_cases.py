@@ -264,6 +264,27 @@ def test_logp(tmpdir):
   assert "10:114758349_C/T" in top_variants
   assert len(top_variants) == 1
 
+def test_invalid_logp(tmpdir):
+  """
+  Test giving --logp-col parameter and column has positive values (so user probably gave -log10 not log10)
+  """
+
+  frame = inspect.currentframe()
+  func = frame.f_code.co_name
+  prefix = tmpdir.join(func)
+  whereami = path.join(path.dirname(__file__))
+
+  data = path.join(whereami, "data/high_precision_pvalue_with_invalid_logpcol.tab")
+  gwascat = path.join(whereami, "data/gwascat_ebi_GRCh37p13.tab")
+  args = "swiss --assoc {data} --build hg19 --ld-clump-source 1000G_2014-11_ALL " \
+         "--ld-gwas-source 1000G_2014-11_ALL --gwas-cat {gwascat} " \
+         "--variant-col EPACTS --logp-col LOGP --ld-clump --clump-p 5e-08 --out {prefix}".format(data=data, prefix=prefix, gwascat=gwascat)
+
+  with pytest.raises(ValueError) as exc:
+    swiss_main(args)
+
+  assert "-log10" in str(exc.value)
+
 def test_missing_tabix(tmpdir):
   frame = inspect.currentframe()
   func = frame.f_code.co_name
