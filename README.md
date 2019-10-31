@@ -54,9 +54,15 @@ The latest package tarballs are here:
 
 | Version | Date       | Install                                                         |
 |---------|------------|-----------------------------------------------------------------|
-| 1.1.0 | 10/24/2019 | `pip install git+https://github.com/welchr/swiss.git@v1.1.0`  |
+| 1.1.1 | 10/31/2019 | `pip install git+https://github.com/welchr/swiss.git@v1.1.1`  |
 
 ## Changes
+
+1.1.1 - 10/31/2019
+
+Bug fixes:
+
+* Fix crash in `swiss-create-data` caused by invalid unicode characters in rsIDs from GWAS catalog
 
 1.1.0 - 10/24/2019
 
