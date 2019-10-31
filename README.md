@@ -3,7 +3,6 @@
 * [Synopsis](#synopsis)
 * [Requirements](#requirements)
 * [Download](#download)
-* [Changes](#changes)
 * [Installation](#installation)
 * [Usage](#usage)
   * [Simple example](#simple-example)
@@ -23,6 +22,7 @@
 * [Generate GWAS catalog](#generate-gwas-catalog)
 * [Options](#options)
 * [Limitations](#limitations)
+* [Changes](#changes)
 * [License](#license)
 
 ## Synopsis
@@ -56,143 +56,7 @@ The latest package tarballs are here:
 |---------|------------|-----------------------------------------------------------------|
 | 1.1.1 | 10/31/2019 | `pip install git+https://github.com/welchr/swiss.git@v1.1.1`  |
 
-## Changes
-
-1.1.1 - 10/31/2019
-
-Bug fixes:
-
-* Fix crash in `swiss-create-data` caused by invalid unicode characters in rsIDs from GWAS catalog
-
-1.1.0 - 10/24/2019
-
-Bug fixes:
-
-* Fixed an issue where VCFs with chromosomes specified as 'chr#' instead of simply '#' would cause swiss to send no output to PLINK, which produced a red herring "File read failure" message.
-
-* Existence of tabix index was not previously checked
-
-* P-values exceeding double precision were not properly handled and would result in p-value of 0.0 in result file
-
-New features:
-
-* P-values can be provided in log10 scale now using the `--logp-col` option to denote which column contains log10 p-values. Note that this is exactly log10(p-value), and *not* -log10. The reason for this is that the most popular meta-analysis program METAL outputs log10(p) when using the LOGPVALUE ON option.
-
-1.0.0 - 08/30/2018
-
-Bug fixes:
-
-* Fixed an issue with VCFs that misuse the FILTER column. Swiss now checks if "PASS" occurs anywhere within the FILTER column, and if it does, the variant is assumed to be OK to use. Previously, Swiss expected the column simply to contain "PASS" and nothing else.
-
-New features:
-
-* Support for GRCh38. EBI GWAS catalog and 1000G phase 3 genotypes in GRCh38 coordinates are both now available. Use `swiss --download-data` to grab the latest files. You can also now use `swiss-create-data` to generate new up-to-date GWAS catalogs for both GRCh37 and GRCh38.
-
-  **Note**: if you previously customized your install by copying the default swiss.yaml to `~/.config/`, you will need to repeat this process again to see the new LD sources (or just copy them over from the bottom of the file.)
-
-* Header rows beginning with "##" are now skipped in association files
-
-* Paths to files being used for calculating LD will now be shown in log
-
-Backward incompatible changes:
-
-* 1000G phase 1 LD files have been removed since they are superseded by 1000G phase 3
-
-1.0.0b7 - 03/03/2018
-
-Bug fixes:
-
-* Fix issue when installing latest version of bx-python requiring python-lzo which does not install nicely. There is now a requirements.txt with versions pinned.
-
-1.0.0b6 - 03/03/2018
-
-Bug fixes:
-
-* Fix PLINK version detection
-
-New features:
-
-* Allow passing arguments through to PLINK, use `--plink-args`. For example: `--plink-args '--double-id --vcf-half-call missing'`. You must quote the arguments to be passed through or the shell will expand them.
-
-1.0.0b5 - 10/03/2017
-
-Slight change in versioning scheme to more closely follow semver.
-
-Bug fixes:
-
-* Previously swiss would not include the top independent variants themselves when looking for LD buddies that exist in the GWAS catalog. These would only have been picked up in the `near-gwas` scan and not the `ld-gwas` scan. Now they will correctly appear in both places. (GH [#6](../../issues/6))
-* Deprecation of `pandas.DataFrame.sort` -> `sort_values`
-* Updated NCBI URLs for swiss-create-data (thank you Daniele Di Domizio)
-
-New features:
-
-* Better accounting/printing of what is happening during GWAS catalog
-  parsing
-* Allow using existing SNP history and RsMergeArch when using
-  swiss-create-data
-* Better display of LD (and distance) clumping settings currently in use
-
-1.0b4 - 01/17/2016
-
-Bug fixes:
-
-* Indels with very long alleles are now supported, previously they could
-  not be used for calculating LD due to allele length limitation in
-  PLINK
-
-New features:
-
-* Include 1000G phase 3 (hg19/GRCh37) (re-run `swiss --download-data`)
-* Issue template for github
-
-1.0b3 - 12/26/2016
-
-Bug fixes:
-
-* Unicode error when parsing catalog
-
-1.0b2 - 11/30/2016
-
-New features:
-
-* Script to create GWAS catalog without waiting for data releases `swiss-create-data` - see [Generate GWAS catalog](#generate-gwas-catalog) for more info
-
-1.0b1 - 11/27/2016
-
-**This version has backwards incompatible changes with the previous 0.x
-releases.**
-
-New features:
-
-* Support for indel and other types of variants
-
-* Much improved speed in calculating LD
-
-* New option --list-files will now show the current config file and data files in use
-
-* New option --download-data to automatically download/update when new supporting data (GWAS catalog, LD files, etc.) are available
-
-Backwards incompatible changes:
-
-* Swiss is installed now as a python package, instead of a standalone directory. Some files have shifted around in locations. Use --list-files to find installed locations.
-
-* Swiss requires PLINK 1.9 or greater now to compute LD. It must exist on your $PATH, or the path must be set in the config file (see next).
-
-* Config file is no longer stored relative to the swiss root directory, but rather within the package directory. To override, you can copy the default config file to ~/.config/swiss.yaml and modify it. Use `swiss --list-files` to find the default config file.
-
-* Option --snp-col is now --variant-col. The default is "MARKER_ID". Variants in your association results file must contain both ref and alt alleles. This needs to be specified either 1) in the variant column, as EPACTS style IDs (chr:pos_ref/alt), or 2) there must be CHR, POS, REF, and ALT columns in the file.
-
-* The default GWAS catalog has been renamed from nhgri to ebi. Use `--gwas-cat ebi` to specify this catalog. It is currently only available for hg19/GRCh37, but the hg38 version will be generated soon.
-
-* The GWAS catalog now only contains a LOG_PVAL, rather than P_VALUE column. LOG_PVAL is -log10(p-value). As a result, .ld-gwas and .near-gwas files will have a GWAS_LOG_PVAL column, rather than the prior p-value based column.
-
-0.9.5 - 02/18/2016
-
-* Update NHGRI GWAS catalog
-
-0.9.4 - 12/4/2014
-
-* Fixes a potential installation issue on Debian where virtualenv would not install pip and setuptools
+Please see the [changelog](#changes) for a list of recent bug fixes and new features.
 
 ## Installation
 
@@ -762,6 +626,144 @@ usage: swiss [options]
 ## Limitations
 
 The latest human genome build (hg38) is not yet supported.
+
+## Changes
+
+1.1.1 - 10/31/2019
+
+Bug fixes:
+
+* Fix crash in `swiss-create-data` caused by invalid unicode characters in rsIDs from GWAS catalog
+
+1.1.0 - 10/24/2019
+
+Bug fixes:
+
+* Fixed an issue where VCFs with chromosomes specified as 'chr#' instead of simply '#' would cause swiss to send no output to PLINK, which produced a red herring "File read failure" message.
+
+* Existence of tabix index was not previously checked
+
+* P-values exceeding double precision were not properly handled and would result in p-value of 0.0 in result file
+
+New features:
+
+* P-values can be provided in log10 scale now using the `--logp-col` option to denote which column contains log10 p-values. Note that this is exactly log10(p-value), and *not* -log10. The reason for this is that the most popular meta-analysis program METAL outputs log10(p) when using the LOGPVALUE ON option.
+
+1.0.0 - 08/30/2018
+
+Bug fixes:
+
+* Fixed an issue with VCFs that misuse the FILTER column. Swiss now checks if "PASS" occurs anywhere within the FILTER column, and if it does, the variant is assumed to be OK to use. Previously, Swiss expected the column simply to contain "PASS" and nothing else.
+
+New features:
+
+* Support for GRCh38. EBI GWAS catalog and 1000G phase 3 genotypes in GRCh38 coordinates are both now available. Use `swiss --download-data` to grab the latest files. You can also now use `swiss-create-data` to generate new up-to-date GWAS catalogs for both GRCh37 and GRCh38.
+
+  **Note**: if you previously customized your install by copying the default swiss.yaml to `~/.config/`, you will need to repeat this process again to see the new LD sources (or just copy them over from the bottom of the file.)
+
+* Header rows beginning with "##" are now skipped in association files
+
+* Paths to files being used for calculating LD will now be shown in log
+
+Backward incompatible changes:
+
+* 1000G phase 1 LD files have been removed since they are superseded by 1000G phase 3
+
+1.0.0b7 - 03/03/2018
+
+Bug fixes:
+
+* Fix issue when installing latest version of bx-python requiring python-lzo which does not install nicely. There is now a requirements.txt with versions pinned.
+
+1.0.0b6 - 03/03/2018
+
+Bug fixes:
+
+* Fix PLINK version detection
+
+New features:
+
+* Allow passing arguments through to PLINK, use `--plink-args`. For example: `--plink-args '--double-id --vcf-half-call missing'`. You must quote the arguments to be passed through or the shell will expand them.
+
+1.0.0b5 - 10/03/2017
+
+Slight change in versioning scheme to more closely follow semver.
+
+Bug fixes:
+
+* Previously swiss would not include the top independent variants themselves when looking for LD buddies that exist in the GWAS catalog. These would only have been picked up in the `near-gwas` scan and not the `ld-gwas` scan. Now they will correctly appear in both places. (GH [#6](../../issues/6))
+* Deprecation of `pandas.DataFrame.sort` -> `sort_values`
+* Updated NCBI URLs for swiss-create-data (thank you Daniele Di Domizio)
+
+New features:
+
+* Better accounting/printing of what is happening during GWAS catalog
+  parsing
+* Allow using existing SNP history and RsMergeArch when using
+  swiss-create-data
+* Better display of LD (and distance) clumping settings currently in use
+
+1.0b4 - 01/17/2016
+
+Bug fixes:
+
+* Indels with very long alleles are now supported, previously they could
+  not be used for calculating LD due to allele length limitation in
+  PLINK
+
+New features:
+
+* Include 1000G phase 3 (hg19/GRCh37) (re-run `swiss --download-data`)
+* Issue template for github
+
+1.0b3 - 12/26/2016
+
+Bug fixes:
+
+* Unicode error when parsing catalog
+
+1.0b2 - 11/30/2016
+
+New features:
+
+* Script to create GWAS catalog without waiting for data releases `swiss-create-data` - see [Generate GWAS catalog](#generate-gwas-catalog) for more info
+
+1.0b1 - 11/27/2016
+
+**This version has backwards incompatible changes with the previous 0.x
+releases.**
+
+New features:
+
+* Support for indel and other types of variants
+
+* Much improved speed in calculating LD
+
+* New option --list-files will now show the current config file and data files in use
+
+* New option --download-data to automatically download/update when new supporting data (GWAS catalog, LD files, etc.) are available
+
+Backwards incompatible changes:
+
+* Swiss is installed now as a python package, instead of a standalone directory. Some files have shifted around in locations. Use --list-files to find installed locations.
+
+* Swiss requires PLINK 1.9 or greater now to compute LD. It must exist on your $PATH, or the path must be set in the config file (see next).
+
+* Config file is no longer stored relative to the swiss root directory, but rather within the package directory. To override, you can copy the default config file to ~/.config/swiss.yaml and modify it. Use `swiss --list-files` to find the default config file.
+
+* Option --snp-col is now --variant-col. The default is "MARKER_ID". Variants in your association results file must contain both ref and alt alleles. This needs to be specified either 1) in the variant column, as EPACTS style IDs (chr:pos_ref/alt), or 2) there must be CHR, POS, REF, and ALT columns in the file.
+
+* The default GWAS catalog has been renamed from nhgri to ebi. Use `--gwas-cat ebi` to specify this catalog. It is currently only available for hg19/GRCh37, but the hg38 version will be generated soon.
+
+* The GWAS catalog now only contains a LOG_PVAL, rather than P_VALUE column. LOG_PVAL is -log10(p-value). As a result, .ld-gwas and .near-gwas files will have a GWAS_LOG_PVAL column, rather than the prior p-value based column.
+
+0.9.5 - 02/18/2016
+
+* Update NHGRI GWAS catalog
+
+0.9.4 - 12/4/2014
+
+* Fixes a potential installation issue on Debian where virtualenv would not install pip and setuptools
 
 ## License
 
