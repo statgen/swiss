@@ -359,6 +359,10 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
           log.add_filter("Variant is not rsID",rsid)
           continue
 
+        # The GWAS catalog sometimes includes corrupted rsIDs with strange unicode characters
+        # This should clear everything that isn't 'rs' or digits
+        rsid = re.sub("[^rs0-9]+", "", rsid)
+
         # Find the position for this SNP.
         vrecord = swiss_db.rsid_to_variant(rsid)
 
