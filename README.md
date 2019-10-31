@@ -50,7 +50,7 @@ Both tabix and plink should be somewhere on your $PATH ideally, or alternatively
 
 ## Download
 
-The latest package tarballs are here:
+The latest version is:
 
 | Version | Date       | Install                                                         |
 |---------|------------|-----------------------------------------------------------------|
