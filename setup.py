@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
   name = "swiss",
-  version = "1.1.0",
+  version = "1.1.1",
   author = "Ryan Welch",
   author_email = "welchr@umich.edu",
 
