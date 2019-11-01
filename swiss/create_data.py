@@ -409,11 +409,13 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
             # was tested against the risk allele for association?
             # So we have to blank out the risk allele if it doesn't match any of the alleles. Same code below for alt alleles.
             risk_al_out = risk_allele if risk_allele in (al, alt) and rsid == strongest_snp else "NA"
+            epacts = "{}:{}_{}/{}".format(chrom, pos, al, alt)
             final_row = u"\t".join([rsid,epacts,chrpos,chrom,pos_s,al,alt,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out,genes,or_beta_out])
             print(final_row,file=out)
         elif len(alt_alleles) > 1:
           for al in alt_alleles:
             risk_al_out = risk_allele if risk_allele in (al, alt) and rsid == strongest_snp else "NA"
+            epacts = "{}:{}_{}/{}".format(chrom, pos, ref, al)
             final_row = u"\t".join([rsid,epacts,chrpos,chrom,pos_s,ref,al,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out,genes,or_beta_out])
             print(final_row,file=out)
 
