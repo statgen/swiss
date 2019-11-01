@@ -386,18 +386,36 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
 
         # Is this the SNP for which we have a risk allele?
         if rsid == strongest_snp:
-          risk_al_out = risk_allele
           risk_frq_out = "{:.2f}".format(risk_al_freq) if not math.isnan(risk_al_freq) else "NA"
           or_beta_out = "{:.2f}".format(or_beta) if not math.isnan(or_beta) else "NA"
         else:
-          risk_al_out = "NA"
           risk_frq_out = "NA"
           or_beta_out = "NA"
 
         pos_s = str(pos)
         log_pval_s = "{:.2f}".format(log_pval)
-        final_row = u"\t".join([rsid,epacts,chrpos,chrom,pos_s,ref,alt,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out,genes,or_beta_out])
-        print(final_row,file=out)
+
+        # We need to decompose the record into multiple records, one for each allele if ref or alt is multi-allelic.
+        ref_alleles = ref.split(",")
+        alt_alleles = alt.split(",")
+        if len(ref_alleles) > 1 and len(alt_alleles) > 1:
+          log.add_filter("SNP had multiple ref and alt alleles, cannot parse", key)
+          continue
+
+        if len(ref_alleles) > 1:
+          for al in ref_alleles:
+            # The GWAS catalog should have listed both alleles that were tested, instead of just the risk allele. For
+            # example, if there is 1 REF allele, multiple ALT alleles, and the risk allele is the REF... then which ALT allele
+            # was tested against the risk allele for association?
+            # So we have to blank out the risk allele if it doesn't match any of the alleles. Same code below for alt alleles.
+            risk_al_out = risk_allele if risk_allele in (al, alt) and rsid == strongest_snp else "NA"
+            final_row = u"\t".join([rsid,epacts,chrpos,chrom,pos_s,al,alt,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out,genes,or_beta_out])
+            print(final_row,file=out)
+        elif len(alt_alleles) > 1:
+          for al in alt_alleles:
+            risk_al_out = risk_allele if risk_allele in (al, alt) and rsid == strongest_snp else "NA"
+            final_row = u"\t".join([rsid,epacts,chrpos,chrom,pos_s,ref,al,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out,genes,or_beta_out])
+            print(final_row,file=out)
 
   print("")
   log.summary()
