@@ -240,6 +240,11 @@ class AssocResults:
         data.at[index,self.chrom_col] = chrom
         data.at[index,self.pos_col] = pos
 
+        # Fill in alleles as well.
+        if (self.ref_col not in data) and (self.alt_col not in data):
+          data.at[index,self.ref_col] = ref
+          data.at[index,self.alt_col] = alt
+
         # Insert normalized EPACTS ID (chop off the junk at the very end, if there was any)
         data.at[index,self.epacts_col] = "{}:{}_{}/{}".format(chrom,pos,ref,alt)
 
