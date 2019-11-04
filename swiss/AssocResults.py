@@ -248,6 +248,13 @@ class AssocResults:
         # Insert normalized EPACTS ID (chop off the junk at the very end, if there was any)
         data.at[index,self.epacts_col] = "{}:{}_{}/{}".format(chrom,pos,ref,alt)
 
+    # The user must provide decomposed multi-allelic variants.
+    # If they provide one row with multiple alleles, it's an error, because we don't know
+    # which allele was tested.
+    multiallelic = data[self.epacts_col].str.contains(",")
+    if multiallelic.any():
+      error("Multi-allelic variants are not supported in the association results file. Please decompose into multiple records (one per allele) first.")
+
     # Drop variants that do not have chromosome
     data = data[data[self.chrom_col].notnull()]
 
