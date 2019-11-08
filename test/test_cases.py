@@ -348,3 +348,28 @@ def test_chr_prefix(tmpdir):
   assert df.loc[0, "EPACTS"].startswith("chr")
   assert len(df) == 1
   assert df.loc[0,"SWISS_VARIANT"] == "10:114754088_T/C"
+
+def test_multiallelic(tmpdir):
+  whereami = path.join(path.dirname(__file__))
+  gwascat = path.join(whereami, "data/multiallelic.gwascat.tab")
+  data = path.join(whereami, "data/multiallelic.assoc.tab")
+  vcf = path.join(whereami, "data/multiallelic.decomposed.vcf.gz") # swiss expects all LD VCFs to have decomposed multiallelics
+  args = """
+    swiss --assoc {data} --gwas-cat {gwascat} --ld-clump 
+      --ld-clump-source {vcf} --ld-gwas-source {vcf}
+      --clump-ld-thresh 0.1 --out testmulti --plink-args '--vcf-half-call m'
+  """
+  args = args.format(data=data,gwascat=gwascat,vcf=vcf)
+  swiss_main(args)
+
+  df = pd.read_table("testmulti.clump")
+  assert df.shape[0] == 1
+  assert df.loc[0, "MARKER_ID"] == "1:1_A/T"
+  assert df.loc[0, "ld_with_values"] == pytest.approx(0.20)
+  assert df.loc[0, "ld_with"] == "1:2_T/C"
+
+  df = pd.read_table("testmulti.ld-gwas.tab")
+  assert df.shape[0] == 1
+  assert df.loc[0, "ASSOC_EPACTS"] == "1:1_A/T"
+  assert df.loc[0, "GWAS_EPACTS"] == "1:4_G/A"
+  assert df.loc[0, "ASSOC_GWAS_LD"] == pytest.approx(1.0)
