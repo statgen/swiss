@@ -285,7 +285,7 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
   with io.open(filepath,"r",encoding="utf-8") as f, io.open(outpath,'w',encoding="utf-8") as out:
     f.readline() # header
 
-    new_header = u"\t".join("VARIANT EPACTS CHRPOS CHR POS REF ALT PHENO GROUP LOG_PVAL CITATION RISK_ALLELE RISK_AL_FREQ GENE_LABEL OR_BETA".split())
+    new_header = u"\t".join("VARIANT EPACTS CHRPOS CHR POS REF ALT PHENO GROUP LOG_PVAL CITATION RISK_ALLELE RISK_AL_FREQ GENE_LABEL OR_BETA MULTIALLELIC".split())
     print(new_header,file=out)
 
     seen_trait_snps = set()
@@ -373,7 +373,7 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
 
         chrom, pos = vrecord.chrom, vrecord.pos
         ref, alt = vrecord.ref, vrecord.alt
-        epacts = "{}:{}_{}/{}".format(chrom,pos,ref,alt)
+        orig_epacts = epacts = "{}:{}_{}/{}".format(chrom,pos,ref,alt)
         chrpos = "{}:{}".format(chrom,pos)
 
         # If we've already seen this association, we don't need to print it.
@@ -406,10 +406,10 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
           for al in alt_alleles:
             risk_al_out = risk_allele if risk_allele in (al, alt) and rsid == strongest_snp else "NA"
             epacts = "{}:{}_{}/{}".format(chrom, pos, ref, al)
-            final_row = u"\t".join([rsid,epacts,chrpos,chrom,pos_s,ref,al,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out,genes,or_beta_out])
+            final_row = u"\t".join([rsid,epacts,chrpos,chrom,pos_s,ref,al,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out,genes,or_beta_out,orig_epacts])
             print(final_row,file=out)
         else:
-          final_row = u"\t".join([rsid,epacts,chrpos,chrom,pos_s,ref,alt,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out,genes,or_beta_out])
+          final_row = u"\t".join([rsid,epacts,chrpos,chrom,pos_s,ref,alt,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out,genes,or_beta_out,"NA"])
           print(final_row,file=out)
 
   print("")
