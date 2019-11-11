@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 #===============================================================================
 # Copyright (C) 2014 Ryan Welch, The University of Michigan
@@ -68,6 +69,15 @@ EPACTS_DTYPES = {
   "BEG" : pd.np.float64,
   "END" : pd.np.float64
 }
+
+GWASCAT_MULTIALLELIC_WARNING = colored(
+  u"↴\n\n"
+  "GWAS catalog results contained multi-allelic variants decomposed into multiple rows, one per allele. You can find "
+  "which variants were multi-allelic in the 'GWAS_MULTIALLELIC' column. Due to limitations in the GWAS catalog, "
+  "it is not known which alleles (other than the risk allele) are associated with the trait. You will need to "
+  "examine the original publication to determine that.",
+  "red"
+)
 
 def tqdm_hook(t):
   """
@@ -871,6 +881,9 @@ def run_process(assoc,trait,outprefix,opts):
         if opts.include_cols:
           gwas_ld = merge_include_cols_gwas_hits(gwas_ld,results_clumped,opts.include_cols,opts.variant_col)
 
+        if "GWAS_MULTIALLELIC" in gwas_ld and (gwas_ld["GWAS_MULTIALLELIC"] != "NA").any():
+          warning(GWASCAT_MULTIALLELIC_WARNING)
+
         out_ld_gwas = outprefix + ".ld-gwas.tab"
         print "\nWriting GWAS catalog variants in LD with clumped variants to: %s" % out_ld_gwas
         gwas_ld.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA")
@@ -884,6 +897,9 @@ def run_process(assoc,trait,outprefix,opts):
         # If the user requested other association results columns be merged in with the gwas_hits, add them in.
         if opts.include_cols:
           gwas_near = merge_include_cols_gwas_hits(gwas_near,results_clumped,opts.include_cols,opts.variant_col)
+
+        if "GWAS_MULTIALLELIC" in gwas_near and (gwas_near["GWAS_MULTIALLELIC"] != "NA").any():
+          warning(GWASCAT_MULTIALLELIC_WARNING)
 
         out_near_gwas = outprefix + ".near-gwas.tab"
         print "Writing GWAS catalog variants within %s of a clumped variant to: %s" % (BasePair(opts.gwas_cat_dist).as_kb(),out_near_gwas)
@@ -928,6 +944,9 @@ def run_process(assoc,trait,outprefix,opts):
         if opts.include_cols:
           gwas_ld = merge_include_cols_gwas_hits(gwas_ld,results,opts.include_cols,opts.variant_col)
 
+        if "GWAS_MULTIALLELIC" in gwas_ld and (gwas_ld["GWAS_MULTIALLELIC"] != "NA").any():
+          warning(GWASCAT_MULTIALLELIC_WARNING)
+
         out_ld_gwas = outprefix + ".ld-gwas.tab"
         print "\nWriting GWAS catalog variants in LD with clumped variants to: %s" % out_ld_gwas
         gwas_ld.to_csv(out_ld_gwas,index=False,sep="\t",na_rep="NA")
@@ -941,6 +960,9 @@ def run_process(assoc,trait,outprefix,opts):
         # If the user requested other association results columns be merged in with the gwas_hits, add them in.
         if opts.include_cols:
           gwas_near = merge_include_cols_gwas_hits(gwas_near,results,opts.include_cols,opts.variant_col)
+
+        if "GWAS_MULTIALLELIC" in gwas_near and (gwas_near["GWAS_MULTIALLELIC"] != "NA").any():
+          warning(GWASCAT_MULTIALLELIC_WARNING)
 
         out_near_gwas = outprefix + ".near-gwas.tab"
         print "Writing GWAS catalog variants within %s of a clumped variant to: %s" % (BasePair(opts.gwas_cat_dist).as_kb(),out_near_gwas)
@@ -961,6 +983,9 @@ def run_process(assoc,trait,outprefix,opts):
         if opts.include_cols:
           gwas_ld = merge_include_cols_gwas_hits(gwas_ld,results,opts.include_cols,opts.variant_col)
 
+        if "GWAS_MULTIALLELIC" in gwas_ld and (gwas_ld["GWAS_MULTIALLELIC"] != "NA").any():
+          warning(GWASCAT_MULTIALLELIC_WARNING)
+
         print "Found %i GWAS catalog variants in LD with a clumped variant.." % gwas_ld.shape[0]
 
         out_ld_gwas = outprefix + ".ld-gwas.tab"
@@ -976,6 +1001,9 @@ def run_process(assoc,trait,outprefix,opts):
         # If the user requested other association results columns be merged in with the gwas_hits, add them in.
         if opts.include_cols:
           gwas_near = merge_include_cols_gwas_hits(gwas_near,results,opts.include_cols,opts.variant_col)
+
+        if "GWAS_MULTIALLELIC" in gwas_near and (gwas_near["GWAS_MULTIALLELIC"] != "NA").any():
+          warning(GWASCAT_MULTIALLELIC_WARNING)
 
         out_near_gwas = outprefix + ".near-gwas.tab"
         print "Writing GWAS catalog variants within %s of a clumped variant to: %s" % (BasePair(opts.gwas_cat_dist).as_kb(),out_near_gwas)
