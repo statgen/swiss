@@ -402,22 +402,15 @@ def parse_gwas_catalog(filepath,dbpath,outpath):
           log.add_filter("SNP had multiple ref and alt alleles, cannot parse", key)
           continue
 
-        if len(ref_alleles) > 1:
-          for al in ref_alleles:
-            # The GWAS catalog should have listed both alleles that were tested, instead of just the risk allele. For
-            # example, if there is 1 REF allele, multiple ALT alleles, and the risk allele is the REF... then which ALT allele
-            # was tested against the risk allele for association?
-            # So we have to blank out the risk allele if it doesn't match any of the alleles. Same code below for alt alleles.
-            risk_al_out = risk_allele if risk_allele in (al, alt) and rsid == strongest_snp else "NA"
-            epacts = "{}:{}_{}/{}".format(chrom, pos, al, alt)
-            final_row = u"\t".join([rsid,epacts,chrpos,chrom,pos_s,al,alt,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out,genes,or_beta_out])
-            print(final_row,file=out)
-        elif len(alt_alleles) > 1:
+        if len(alt_alleles) > 1:
           for al in alt_alleles:
             risk_al_out = risk_allele if risk_allele in (al, alt) and rsid == strongest_snp else "NA"
             epacts = "{}:{}_{}/{}".format(chrom, pos, ref, al)
             final_row = u"\t".join([rsid,epacts,chrpos,chrom,pos_s,ref,al,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out,genes,or_beta_out])
             print(final_row,file=out)
+        else:
+          final_row = u"\t".join([rsid,epacts,chrpos,chrom,pos_s,ref,alt,trait,trait,log_pval_s,citation,risk_al_out,risk_frq_out,genes,or_beta_out])
+          print(final_row,file=out)
 
   print("")
   log.summary()
