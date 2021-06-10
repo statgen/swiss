@@ -100,9 +100,9 @@ def download_dbsnp_vcf(dbsnp_build=None,genome_build=None,url=None,outpath=None)
   Download the NCBI dbSNP VCF for a given human genome build and dbSNP build
 
   Args:
-    dbsnp_build: b147
+    dbsnp_build: b151
     genome_build: GRCh37p13
-    url: Direct URL to file, e.g. ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b147_GRCh37p13/VCF/00-All.vcf.gz
+    url: Direct URL to file, e.g. ftp://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/00-All.vcf.gz
     outpath: Constructed from genome_build and dbsnp_build. If not given, a random filename will be generated.
 
   Returns:
@@ -114,7 +114,7 @@ def download_dbsnp_vcf(dbsnp_build=None,genome_build=None,url=None,outpath=None)
       raise ValueError("Genome build should begin with GRC")
 
     if not dbsnp_build.startswith("b"):
-      raise ValueError("dbSNP build should look like b147, b148, etc.")
+      raise ValueError("dbSNP build should look like b151, etc.")
 
     url = NCBI_VCF_TEMPLATE_URL.format(dbsnp_build,genome_build)
 
@@ -619,7 +619,7 @@ def get_settings():
   p.add_option("--db",help="Database name or path to existing database. If not given, name will default to genome_build.dbsnp_build.sqlite")
   p.add_option("--no-cleanup",help="Leave temporary files alone after creating database instead of deleting them.",default=False,action="store_true")
   p.add_option("--genome-build",help="Specify human genome build to use when downloading data, e.g. GRCh37p13",default="GRCh37p13")
-  p.add_option("--dbsnp-build",help="Specify dbSNP build to use, e.g. b147",default="b147")
+  p.add_option("--dbsnp-build",help="Specify dbSNP build to use, e.g. b151",default="b151")
   p.add_option("--rs-merge-arch",help="(optional) Specify already downloaded RsMergeArch file")
   p.add_option("--snp-history",help="(optional) Specify already downloaded SNP history file")
 
