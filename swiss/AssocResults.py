@@ -202,14 +202,15 @@ class AssocResults:
       if self.query is not None:
         data = data.query(self.query)
 
-    for col in ('vid_col',):
-      if self.__dict__[col] not in data.columns:
-        error("column '%s' does not exist in your association results data" % self.__dict__[col])
+    has_variant_col = self.vid_col in data.columns
 
     has_epacts_cols = (self.chrom_col in data) &\
                       (self.pos_col in data) &\
                       (self.ref_col in data) &\
                       (self.alt_col in data)
+
+    if not has_variant_col and not has_epacts_cols:
+      error("Must provide either a variant column or chrom/pos/ref/alt columns in your assoc results")
 
     if has_epacts_cols:
       # If the data file has the needed columns, we can create an EPACTS formatted ID for each variant.
