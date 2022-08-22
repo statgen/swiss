@@ -342,6 +342,8 @@ def get_settings(arg_string=None):
   parser.add_option("--logp-col",help="log10(p-value) column",default="LOGPVALUE")
   parser.add_option("--chrom-col",help="Chromosome column name in results file.",default="CHR")
   parser.add_option("--pos-col",help="Position column name in results file.",default="POS")
+  parser.add_option("--ref-col",help="Reference allele column name in results file.",default="REF")
+  parser.add_option("--alt-col",help="Alt allele column name in results file.",default="ALT")
   parser.add_option("--rsq-col",help="Imputation quality column name.",default="RSQ")
   parser.add_option("--trait-col",help="Trait column name. Can be omitted, in which case the value of --trait will be added as a column.",default=None)
 
@@ -801,6 +803,8 @@ def run_process(assoc,trait,outprefix,opts):
   results.vid_col = opts.variant_col
   results.chrom_col = opts.chrom_col
   results.pos_col = opts.pos_col
+  results.ref_col = opts.ref_col
+  results.alt_col = opts.alt_col
   results.pval_col = opts.pval_col
   results.logp_col = opts.logp_col
   results.rsq_col = opts.rsq_col
