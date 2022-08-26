@@ -340,6 +340,7 @@ def get_settings(arg_string=None):
   parser.add_option("--variant-col",help="Variant column name in results file.",default="MARKER_ID")
   parser.add_option("--pval-col",help="P-value column name in results file.",default="PVALUE")
   parser.add_option("--logp-col",help="log10(p-value) column",default="LOGPVALUE")
+  parser.add_option("--neglog",help="Tells swiss that the log10 p-value column is actually -log10 p-value",action="store_true",default=False)
   parser.add_option("--chrom-col",help="Chromosome column name in results file.",default="CHR")
   parser.add_option("--pos-col",help="Position column name in results file.",default="POS")
   parser.add_option("--ref-col",help="Reference allele column name in results file.",default="REF")
@@ -780,14 +781,21 @@ def merge_include_cols_gwas_hits(gwas_hits,results,include_cols,variant_col):
 
   if len(include_cols) == 0:
     print "Warning: user specified --include-cols, but none of them existed in the association results!"
-  else:
-    assoc_incl_cols = results.data[[variant_col] + include_cols]
-    assoc_incl_cols.rename(
-      columns = dict(zip(include_cols,map(lambda x: "ASSOC_" + x,include_cols))),
-      inplace = True
-    )
-    gwas_hits = pd.merge(gwas_hits,assoc_incl_cols,left_on="ASSOC_VARIANT",right_on=variant_col)
-    del gwas_hits[variant_col]
+    return gwas_hits
+
+  assoc_incl_cols = results.data[[variant_col] + include_cols]
+
+  if results.logp_col in include_cols:
+    if results.neglog:
+      # Restore log p-values to -log10 scale
+      assoc_incl_cols[results.logp_col] = -assoc_incl_cols[results.logp_col]
+
+  assoc_incl_cols.rename(
+    columns = dict(zip(include_cols,map(lambda x: "ASSOC_" + x,include_cols))),
+    inplace = True
+  )
+  gwas_hits = pd.merge(gwas_hits,assoc_incl_cols,left_on="ASSOC_VARIANT",right_on=variant_col)
+  del gwas_hits[variant_col]
 
   return gwas_hits
 
@@ -870,7 +878,7 @@ def run_process(assoc,trait,outprefix,opts):
     out_clump = outprefix + ".clump"
 
     print "\nWriting clumped results to: %s" % out_clump
-    results_clumped.data.to_csv(out_clump,index=False,sep="\t",na_rep="NA")
+    results_clumped.to_tsv(out_clump)
 
     if not opts.skip_gwas:
       print "\nFinding clumped results in LD with GWAS catalog variants..."
@@ -934,7 +942,7 @@ def run_process(assoc,trait,outprefix,opts):
     out_clump = outprefix + ".clump"
 
     print "\nWriting clumped results to: %s" % out_clump
-    results.data.to_csv(out_clump,index=False,sep="\t",na_rep="NA")
+    results.to_tsv(out_clump)
 
     if not opts.skip_gwas:
       print "\nFinding clumped results in LD with GWAS catalog variants..."

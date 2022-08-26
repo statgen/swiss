@@ -128,6 +128,7 @@ class AssocResults:
 
     self.pval_thresh = pval_thresh
     self.rsq_filter = rsq_filter
+    self.neglog = False
     self.query = query
 
   def load(self,*args,**kwargs):
@@ -162,7 +163,12 @@ class AssocResults:
           chunk[self.logp_col] = chunk[self.pval_col].map(convert_to_log10)
 
         if (chunk[self.logp_col] > 0).any():
-          raise ValueError("log10 p-value contained positive values, did you provide -log10 instead?")
+          # They provided -log10 p-values instead of log10 p-values
+          # Just negate them internally and re-negate them on later write out
+          warning("Warning: detected what appear to be -log10 p-values in the logp column due to positive values being present. "
+                  "If this is not the case, please check your log p-value column: %s" % self.logp_col)
+          self.neglog = True
+          chunk[self.logp_col] = -chunk[self.logp_col]
 
         if self.pval_thresh is not None:
           chunk = chunk[chunk[self.logp_col] < float(self.pval_thresh.log10())]
@@ -188,6 +194,15 @@ class AssocResults:
         # below works in either float or Decimal cases.
         if self.logp_col not in data:
           data[self.logp_col] = np.log10(data[self.pval_col])
+
+        if (data[self.logp_col] > 0).any():
+          # They provided -log10 p-values instead of log10 p-values
+          # Just negate them internally and re-negate them on later write out
+          warning("Warning: detected what appear to be -log10 p-values in the logp column due to positive values being present. "
+                  "If this is not the case, please check your log p-value column: %s" % self.logp_col)
+          self.neglog = True
+          data[self.logp_col] = -data[self.logp_col]
+
         data = data[data[self.logp_col] < float(self.pval_thresh.log10())]
       else:
         # If no p-value threshold was given, it means give each variant a random p-value
@@ -357,3 +372,12 @@ class AssocResults:
 
   def has_rows(self):
     return self.data.shape[0] <= 0
+
+  def to_tsv(self,out):
+    df = self.data
+    if self.neglog:
+      df = self.data.copy(deep=True)
+      # Need to put p-values back on -log10 scale before writing out
+      df[self.logp_col] = -df[self.logp_col]
+
+    df.to_csv(out, index=False, sep="\t", na_rep="NA")
